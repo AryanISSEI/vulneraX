@@ -1,0 +1,14 @@
+fastapi
+uvicorn[standard]
+python-nmap
+requests
+beautifulsoup4
+aiohttp
+httpx
+jinja2
+fpdf2
+python-whois
+dnspython
+aiosqlite
+aiofiles
+python-multipart

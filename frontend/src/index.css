@@ -1,0 +1,161 @@
+@import "tailwindcss";
+
+/* ── Cyberpunk / High-Contrast Tokens ── */
+@theme {
+  --color-bg-primary: #000000;
+  --color-bg-secondary: #0a0a0a;
+  --color-bg-card: #0f0f0f;
+  --color-bg-card-hover: #171717;
+  --color-bg-input: #050505;
+
+  --color-border-default: #222222;
+  --color-border-glow: #00ff41;
+  --color-border-focus: #444444;
+
+  --color-text-primary: #ffffff;
+  --color-text-secondary: #a1a1aa;
+  --color-text-muted: #52525b;
+
+  --color-accent-primary: #00ff41; /* Cyber Green */
+  --color-accent-secondary: #ff003c; /* Laser Red */
+  --color-accent-cyan: #00f0ff; /* Neon Cyan */
+  --color-accent-yellow: #ffe600; /* Cyber Yellow */
+
+  --color-severity-critical: #ff003c;
+  --color-severity-high: #ff4500;
+  --color-severity-medium: #ffe600;
+  --color-severity-low: #00f0ff;
+  --color-severity-info: #52525b;
+
+  --color-status-present: #00ff41;
+  --color-status-weak: #ffe600;
+  --color-status-missing: #ff003c;
+
+  --font-sans: 'Inter', 'Segoe UI', system-ui, -apple-system, sans-serif;
+  --font-mono: 'JetBrains Mono', 'Fira Code', 'Consolas', monospace;
+}
+
+/* ── Global Styles ── */
+* {
+  margin: 0;
+  padding: 0;
+  box-sizing: border-box;
+}
+
+html {
+  scroll-behavior: smooth;
+  background: var(--color-bg-primary);
+}
+
+body {
+  font-family: var(--font-sans);
+  background: var(--color-bg-primary);
+  color: var(--color-text-primary);
+  min-height: 100vh;
+  -webkit-font-smoothing: antialiased;
+  -moz-osx-font-smoothing: grayscale;
+}
+
+/* Subtle CRT grid overlay instead of blurs */
+body::before {
+  content: '';
+  position: fixed;
+  inset: 0;
+  background-image: 
+    linear-gradient(rgba(0, 255, 65, 0.015) 1px, transparent 1px),
+    linear-gradient(90deg, rgba(0, 255, 65, 0.015) 1px, transparent 1px);
+  background-size: 20px 20px;
+  pointer-events: none;
+  z-index: 0;
+}
+
+#root {
+  position: relative;
+  z-index: 1;
+  min-height: 100vh;
+}
+
+/* ── Scrollbar ── */
+::-webkit-scrollbar {
+  width: 4px;
+  height: 4px;
+}
+::-webkit-scrollbar-track {
+  background: var(--color-bg-primary);
+}
+::-webkit-scrollbar-thumb {
+  background: #333;
+}
+::-webkit-scrollbar-thumb:hover {
+  background: var(--color-accent-primary);
+}
+
+/* ── Utility Classes ── */
+/* Reusing 'glass-panel' name so we don't have to rewrite every component class immediately, but restyling it to a sharp 'cyber-panel' */
+.glass-panel {
+  background: var(--color-bg-card);
+  border: 1px solid var(--color-border-default);
+  /* Sharp corners for a more aggressive look */
+  border-radius: 4px; 
+  box-shadow: 0 4px 6px -1px rgba(0, 0, 0, 0.5);
+  transition: all 0.2s ease;
+}
+
+.glass-panel:hover {
+  border-color: #333;
+}
+
+/* Add a glowing variant for active/important panels */
+.glass-panel-glow {
+  border-color: var(--color-border-glow);
+  box-shadow: 0 0 10px rgba(0, 255, 65, 0.1);
+}
+
+.glow-text {
+  text-shadow: 0 0 10px rgba(0, 255, 65, 0.5);
+}
+
+.gradient-text {
+  /* High contrast solid colors instead of gradients for cyberpunk feel */
+  color: var(--color-text-primary);
+  text-shadow: 1px 1px 0px var(--color-accent-primary);
+}
+
+/* ── Animations ── */
+@keyframes fade-in {
+  from { opacity: 0; }
+  to { opacity: 1; }
+}
+
+@keyframes slide-up {
+  from { opacity: 0; transform: translateY(10px); }
+  to { opacity: 1; transform: translateY(0); }
+}
+
+@keyframes terminal-blink {
+  0%, 100% { opacity: 1; }
+  50% { opacity: 0; }
+}
+
+.animate-fade-in {
+  animation: fade-in 0.3s ease-out forwards;
+}
+
+.animate-slide-up {
+  animation: slide-up 0.4s ease-out forwards;
+}
+
+.animate-blink {
+  animation: terminal-blink 1s step-end infinite;
+}
+
+.stagger-children > * {
+  opacity: 0;
+  animation: fade-in 0.3s ease-out forwards;
+}
+.stagger-children > *:nth-child(1) { animation-delay: 0.05s; }
+.stagger-children > *:nth-child(2) { animation-delay: 0.1s; }
+.stagger-children > *:nth-child(3) { animation-delay: 0.15s; }
+.stagger-children > *:nth-child(4) { animation-delay: 0.2s; }
+.stagger-children > *:nth-child(5) { animation-delay: 0.25s; }
+.stagger-children > *:nth-child(6) { animation-delay: 0.3s; }
