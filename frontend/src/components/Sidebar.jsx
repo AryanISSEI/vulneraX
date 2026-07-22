@@ -1,61 +1,65 @@
-import { Shield, History, PlusSquare } from 'lucide-react';
-import { NavLink, Link } from 'react-router-dom';
+import React from 'react';
+import {
+  Activity,
+  BrainCircuit,
+  FileText,
+  Radar,
+  ScanSearch,
+  Settings,
+  Shield,
+  Siren,
+} from 'lucide-react';
+import { NavLink } from 'react-router-dom';
+import StatusBadge from './ui/StatusBadge';
+
+const navItems = [
+  { to: '/', label: 'Dashboard', icon: Activity, end: true },
+  { to: '/new-scan', label: 'New Scan', icon: ScanSearch },
+  { to: '/target-assets', label: 'Target Assets', icon: Radar },
+  { to: '/vulnerabilities', label: 'Vulnerabilities', icon: Siren },
+  { to: '/threat-predictions', label: 'Threat Predictions', icon: BrainCircuit },
+  { to: '/reports', label: 'Reports', icon: FileText },
+  { to: '/settings', label: 'Settings', icon: Settings },
+];
 
 export default function Sidebar() {
   return (
-    <div className="w-64 border-r border-border-default bg-bg-primary h-full flex flex-col pt-6 shrink-0 relative z-10">
-      {/* Brand */}
-      <div className="px-6 mb-10 flex items-center gap-3">
-        <div className="flex h-10 w-10 items-center justify-center rounded-sm bg-accent-primary/10 border border-accent-primary/20">
-          <Shield className="h-6 w-6 text-accent-primary" />
-        </div>
-        <span className="text-2xl font-bold tracking-tighter text-text-primary uppercase" style={{ textShadow: '1px 1px 0px var(--color-accent-primary)' }}>
-          VulneraX
-        </span>
-      </div>
-
-      {/* Navigation */}
-      <nav className="flex-1 px-4 space-y-2">
-        <NavLink
-          to="/"
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-l-2 ${
-              isActive
-                ? 'border-accent-primary bg-bg-card text-accent-primary'
-                : 'border-transparent text-text-secondary hover:bg-bg-card/50 hover:text-text-primary'
-            }`
-          }
-        >
-          <PlusSquare className="h-4 w-4" />
-          New Scan
-        </NavLink>
-
-        <NavLink
-          to="/history"
-          className={({ isActive }) =>
-            `flex items-center gap-3 px-4 py-3 text-sm font-medium transition-colors border-l-2 ${
-              isActive
-                ? 'border-accent-primary bg-bg-card text-accent-primary'
-                : 'border-transparent text-text-secondary hover:bg-bg-card/50 hover:text-text-primary'
-            }`
-          }
-        >
-          <History className="h-4 w-4" />
-          History
-        </NavLink>
-      </nav>
-
-      {/* Footer / Status */}
-      <div className="p-6 border-t border-border-default mt-auto">
+    <aside className="w-full max-w-[280px] shrink-0">
+      <div className="sticky top-6 h-[calc(100vh-3rem)] rounded-[28px] border border-white/10 bg-slate-950/80 p-5 backdrop-blur-xl">
         <div className="flex items-center gap-3">
-          <span className="relative flex h-2.5 w-2.5">
-            <span className="animate-ping absolute inline-flex h-full w-full rounded-full bg-accent-primary opacity-75"></span>
-            <span className="relative inline-flex rounded-full h-2.5 w-2.5 bg-accent-primary"></span>
-          </span>
-          <span className="text-xs font-mono text-text-muted">SYSTEM ONLINE</span>
+          <div className="rounded-2xl bg-cyan-400/10 p-3 text-cyan-300 ring-1 ring-cyan-400/20">
+            <Shield className="h-6 w-6" />
+          </div>
+          <div>
+            <p className="text-lg font-semibold text-white">VulnGuard</p>
+            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">AI Security Platform</p>
+          </div>
         </div>
-        <p className="text-[10px] text-text-muted mt-2 font-mono">v2.0.0-cyber</p>
+
+        <nav className="mt-10 space-y-2">
+          {navItems.map(({ to, label, icon: Icon, end }) => (
+            <NavLink
+              key={to}
+              to={to}
+              end={end}
+              className={({ isActive }) =>
+                `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition ${
+                  isActive
+                    ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
+                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
+                }`
+              }
+            >
+              <Icon className="h-4 w-4" />
+              {label}
+            </NavLink>
+          ))}
+        </nav>
+
+        <div className="mt-10">
+          <StatusBadge label="System Operational" state="healthy" />
+        </div>
       </div>
-    </div>
+    </aside>
   );
 }
