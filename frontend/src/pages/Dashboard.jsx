@@ -1,61 +1,50 @@
-import { useState, useEffect, useRef } from 'react';
-import ScanForm from '../components/ScanForm';
-import ScanProgress from '../components/ScanProgress';
-import QuickInfo from '../components/QuickInfo';
-import PortTable from '../components/PortTable';
-import HeadersPanel from '../components/HeadersPanel';
-import CookiePanel from '../components/CookiePanel';
-import SSLPanel from '../components/SSLPanel';
-import VulnPanel from '../components/VulnPanel';
+import React, { useState, useRef, useCallback } from 'react';
+import { Activity, Globe, ShieldAlert, BrainCircuit } from 'lucide-react';
+import HeaderScanBar from '../components/HeaderScanBar';
+import LiveScanActivity from '../components/LiveScanActivity';
+import MetricsGrid from '../components/MetricsGrid';
 import RiskChart from '../components/RiskChart';
 import RiskGauge from '../components/RiskGauge';
-import ReportDownload from '../components/ReportDownload';
+import ReportExports from '../components/ReportExports';
+import TargetAssets from './TargetAssets';
+import Vulnerabilities from './Vulnerabilities';
+import ThreatPredictions from './ThreatPredictions';
 import { startScan, getScanStatus, getScanResults } from '../api/client';
-import { Activity, Network, Globe, Lock } from 'lucide-react';
+import { formatMetrics, parseAttackPaths, extractLiveSteps, generateAIInsights } from '../utils/dashboard';
 
 export default function Dashboard() {
   const [isScanning, setIsScanning] = useState(false);
-  const [scanId, setScanId] = useState(null);
   const [scanStatus, setScanStatus] = useState(null);
   const [currentPhase, setCurrentPhase] = useState('');
   const [scanResult, setScanResult] = useState(null);
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
+  const [selectedMode, setSelectedMode] = useState('');
+  
   const pollRef = useRef(null);
 
-  // Cleanup polling on unmount
-  useEffect(() => {
-    return () => {
-      if (pollRef.current) clearInterval(pollRef.current);
-    };
-  }, []);
-
-  const handleScan = async (target) => {
+  const handleScan = async ({ target, mode }) => {
     setIsScanning(true);
     setError('');
     setScanResult(null);
-    setScanStatus('pending');
-    setCurrentPhase('Initializing...');
+    setScanStatus('running');
+    setCurrentPhase('Network Recon (Nmap)');
+    setSelectedMode(mode);
     setActiveTab('overview');
 
     try {
       const { data } = await startScan(target);
-      setScanId(data.scan_id);
-      setScanStatus('running');
-
-      // Start polling for status
       pollRef.current = setInterval(async () => {
         try {
           const { data: status } = await getScanStatus(data.scan_id);
-          setCurrentPhase(status.current_phase || '');
+          setCurrentPhase(status.current_phase || 'Web Crawl & Audit');
           setScanStatus(status.status);
 
           if (status.status === 'completed') {
             clearInterval(pollRef.current);
             pollRef.current = null;
-
-            // Fetch full results
             const { data: results } = await getScanResults(data.scan_id);
+            results.target = target;
             setScanResult(results);
             setIsScanning(false);
           } else if (status.status === 'error') {
@@ -74,94 +63,101 @@ export default function Dashboard() {
     }
   };
 
+  // Use pure utility functions for derived state
+  const metrics = formatMetrics(scanResult);
+  const liveSteps = extractLiveSteps(currentPhase || scanStatus);
+
   const tabs = [
     { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'network', label: 'Network', icon: Network },
-    { id: 'web', label: 'Web Security', icon: Globe },
-    { id: 'crypto', label: 'Cryptography', icon: Lock },
+    { id: 'assets', label: 'Target Assets', icon: Globe },
+    { id: 'vulnerabilities', label: 'Vulnerabilities', icon: ShieldAlert },
+    { id: 'predictions', label: 'AI Predictions', icon: BrainCircuit, color: 'text-accent-secondary' },
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
+    <div className="max-w-7xl mx-auto flex flex-col gap-8 pb-20 mt-8 relative z-20">
       
-      {/* Search Header area */}
-      <div className={`transition-all duration-500 ease-in-out ${scanResult || isScanning ? 'mb-8' : 'mt-20 mb-10'}`}>
-        <ScanForm onScan={handleScan} isScanning={isScanning} />
+      <div className="text-center mb-4">
+        <h1 className="text-4xl md:text-5xl font-mono text-transparent bg-clip-text bg-gradient-to-r from-white to-gray-500 font-bold mb-4 tracking-tight">
+          Initiate <span className="text-accent-primary drop-shadow-[0_0_10px_rgba(34,211,238,0.5)]">Link</span>
+        </h1>
+        <p className="text-text-muted font-mono max-w-xl mx-auto text-sm">
+          Enter a target IP or domain to begin reconnaissance and vulnerability analysis.
+        </p>
       </div>
 
-      {/* Error */}
+      <HeaderScanBar onScan={handleScan} isScanning={isScanning} />
+
       {error && (
-        <div className="glass-panel p-6 text-sm text-severity-critical bg-severity-critical/10 border-severity-critical/30 mb-8 animate-fade-in flex items-center gap-2 font-mono">
-          <span className="animate-pulse">▶</span> {error}
+        <div className="bg-red-500/10 border border-red-500/50 text-red-500 p-4 rounded-xl text-center font-mono max-w-4xl mx-auto w-full">
+          {error}
         </div>
       )}
 
-      {/* Scan Progress */}
-      {isScanning && (
-        <div className="mb-8">
-          <ScanProgress status={scanStatus} currentPhase={currentPhase} />
-        </div>
+      {(isScanning || scanResult || scanStatus) && (
+        <LiveScanActivity steps={liveSteps} currentPhase={currentPhase} />
       )}
 
-      {/* Results Tabbed Interface */}
-      {scanResult && (
-        <div className="animate-slide-up">
-          {/* Tab Navigation */}
-          <div className="flex border-b border-border-default mb-8 space-x-1 overflow-x-auto">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
-                  activeTab === tab.id 
-                    ? 'border-accent-primary text-accent-primary bg-accent-primary/5' 
-                    : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-bg-card/50'
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            ))}
-            
-            <div className="ml-auto flex items-center py-2 pr-2">
-              <ReportDownload scanId={scanResult.scan_id} />
+      {scanResult && !isScanning && (
+        <div className="animate-slide-up flex flex-col gap-8 mt-4">
+          <div className="flex flex-col md:flex-row md:items-end justify-between gap-4">
+            <div>
+              <h2 className="text-2xl font-mono text-white tracking-widest uppercase">Scan Results</h2>
+              <p className="text-text-muted font-mono text-sm">Target: {scanResult.target}</p>
             </div>
+            <ReportExports scanId={scanResult.scan_id} />
           </div>
 
-          {/* Tab Content */}
-          <div className="min-h-[500px]">
-            {activeTab === 'overview' && (
-              <div className="space-y-8 animate-fade-in">
-                <QuickInfo scanResult={scanResult} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <RiskGauge score={scanResult.risk_score?.overall} />
-                  <RiskChart vulnerabilities={scanResult.vulnerabilities} />
-                </div>
-                <VulnPanel vulnerabilities={scanResult.vulnerabilities} />
-              </div>
-            )}
-
-            {activeTab === 'network' && (
-              <div className="space-y-8 animate-fade-in">
-                <PortTable ports={scanResult.ports} />
-              </div>
-            )}
-
-            {activeTab === 'web' && (
-              <div className="space-y-8 animate-fade-in">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <HeadersPanel headers={scanResult.headers} />
-                  <CookiePanel cookies={scanResult.cookies} />
-                </div>
-              </div>
-            )}
-
-            {activeTab === 'crypto' && (
-              <div className="space-y-8 animate-fade-in">
-                <SSLPanel ssl={scanResult.ssl} />
-              </div>
-            )}
+          {/* Internal Tab Navigation */}
+          <div className="flex overflow-x-auto no-scrollbar gap-2 border-b border-white/10 pb-4">
+            {tabs.map((tab) => {
+              const isActive = activeTab === tab.id;
+              const itemColor = tab.color || 'text-accent-primary';
+              return (
+                <button
+                  key={tab.id}
+                  onClick={() => setActiveTab(tab.id)}
+                  className={`flex items-center gap-2 px-6 py-3 rounded-full font-mono text-sm transition-all whitespace-nowrap
+                    ${isActive ? `bg-white/10 text-white shadow-[inset_0_1px_1px_rgba(255,255,255,0.1)]` : 'text-text-muted hover:bg-white/5 hover:text-white'}
+                  `}
+                >
+                  <tab.icon className={`w-4 h-4 ${isActive ? itemColor : ''}`} />
+                  {tab.label}
+                </button>
+              );
+            })}
           </div>
+
+          {/* Tab Content Views */}
+          {activeTab === 'overview' && (
+            <div className="animate-fade-in flex flex-col gap-8">
+              <MetricsGrid scanResult={scanResult} metrics={metrics} />
+              <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
+                <RiskGauge score={metrics.riskScore} />
+                <RiskChart vulnerabilities={scanResult.vulnerabilities} />
+              </div>
+            </div>
+          )}
+
+          {activeTab === 'assets' && (
+            <div className="animate-fade-in">
+              {/* Pass scanResult down, TargetAssets can render its own internal panels */}
+              <TargetAssets scanResult={scanResult} />
+            </div>
+          )}
+
+          {activeTab === 'vulnerabilities' && (
+            <div className="animate-fade-in">
+              <Vulnerabilities scanResult={scanResult} />
+            </div>
+          )}
+
+          {activeTab === 'predictions' && (
+            <div className="animate-fade-in">
+              {/* Pass AI insights and attack paths */}
+              <ThreatPredictions scanResult={scanResult} attackPaths={parseAttackPaths(scanResult)} aiInsights={generateAIInsights(scanResult)} />
+            </div>
+          )}
         </div>
       )}
     </div>
