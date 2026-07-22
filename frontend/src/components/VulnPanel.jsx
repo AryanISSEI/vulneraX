@@ -1,129 +1,77 @@
-import { useState } from 'react';
-import { Bug, ChevronDown, ChevronUp, AlertTriangle, AlertOctagon, Info, ShieldAlert } from 'lucide-react';
-import { severityColor, severityOrder } from '../utils/helpers';
+import React, { useMemo, useState } from 'react';
+import GlassCard from './ui/GlassCard';
+import SectionHeader from './ui/SectionHeader';
+import StatusBadge from './ui/StatusBadge';
 
-export default function VulnPanel({ vulnerabilities }) {
-  const [expandedIndex, setExpandedIndex] = useState(null);
+const tabs = ['All', 'Critical', 'High', 'OWASP Top 10'];
 
-  if (!vulnerabilities || vulnerabilities.length === 0) {
-    return (
-      <div className="glass-panel p-6 sm:p-8 animate-fade-in">
-        <div className="flex items-center gap-3 mb-4">
-          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-emerald/10">
-            <Bug className="h-5 w-5 text-accent-emerald" />
-          </div>
-          <div>
-            <h3 className="font-semibold text-text-primary">Vulnerabilities</h3>
-            <p className="text-xs text-text-muted">No vulnerabilities detected</p>
-          </div>
-        </div>
-        <div className="flex items-center gap-2 text-sm text-accent-emerald bg-accent-emerald/10 rounded-lg px-4 py-3">
-          <ShieldAlert className="h-4 w-4" />
-          No security vulnerabilities were found during this scan.
-        </div>
-      </div>
-    );
-  }
+export default function VulnPanel({ vulnerabilities = [] }) {
+  const [activeTab, setActiveTab] = useState('All');
 
-  // Sort by severity
-  const sorted = [...vulnerabilities].sort(
-    (a, b) => (severityOrder[a.severity] ?? 4) - (severityOrder[b.severity] ?? 4)
-  );
-
-  const severityIcon = (sev) => {
-    switch (sev?.toLowerCase()) {
-      case 'critical': return AlertOctagon;
-      case 'high': return AlertTriangle;
-      case 'medium': return AlertTriangle;
-      case 'low': return Info;
-      default: return Info;
-    }
-  };
+  const filtered = useMemo(() => {
+    if (activeTab === 'All') return vulnerabilities;
+    if (activeTab === 'OWASP Top 10') return vulnerabilities.filter((item) => item.category === 'OWASP Top 10');
+    return vulnerabilities.filter((item) => item.severity?.toLowerCase() === activeTab.toLowerCase());
+  }, [activeTab, vulnerabilities]);
 
   return (
-    <div className="glass-panel p-6 sm:p-8 animate-fade-in">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-severity-critical/10">
-          <Bug className="h-5 w-5 text-severity-critical" />
-        </div>
-        <div>
-          <h3 className="font-semibold text-text-primary">Vulnerabilities</h3>
-          <p className="text-xs text-text-muted">{vulnerabilities.length} finding{vulnerabilities.length !== 1 ? 's' : ''}</p>
-        </div>
+    <GlassCard className="p-6">
+      <SectionHeader
+        eyebrow="Findings"
+        title="Discovered Vulnerabilities"
+        description="Investigate exposed endpoints, severity, and remediation actions."
+      />
+
+      <div className="mt-5 flex flex-wrap gap-2">
+        {tabs.map((tab) => (
+          <button
+            key={tab}
+            onClick={() => setActiveTab(tab)}
+            className={
+              activeTab === tab
+                ? 'rounded-full bg-cyan-400/10 px-4 py-2 text-sm text-cyan-300 ring-1 ring-cyan-400/20'
+                : 'rounded-full bg-white/5 px-4 py-2 text-sm text-slate-300'
+            }
+          >
+            {tab}
+          </button>
+        ))}
       </div>
 
-      <div className="space-y-2">
-        {sorted.map((vuln, i) => {
-          const colors = severityColor(vuln.severity);
-          const SevIcon = severityIcon(vuln.severity);
-          const isExpanded = expandedIndex === i;
-
-          return (
-            <div
-              key={i}
-              className={`rounded-xl border ${colors.border} ${colors.bg} transition-all`}
-            >
-              <button
-                className="w-full flex items-center justify-between px-4 py-3 text-left"
-                onClick={() => setExpandedIndex(isExpanded ? null : i)}
-              >
-                <div className="flex items-center gap-3 min-w-0">
-                  <SevIcon className={`h-4 w-4 shrink-0 ${colors.text}`} />
-                  <div className="min-w-0">
-                    <p className="text-sm font-medium text-text-primary">{vuln.name}</p>
-                    <p className="text-xs text-text-muted">{vuln.category}</p>
+      <div className="mt-6 overflow-x-auto">
+        <table className="min-w-full text-left text-sm">
+          <thead className="text-slate-400">
+            <tr className="border-b border-white/10">
+              <th className="pb-3">Vulnerability Name</th>
+              <th className="pb-3">Target Endpoint</th>
+              <th className="pb-3">CVE/Type</th>
+              <th className="pb-3">Severity</th>
+              <th className="pb-3">CVSS</th>
+              <th className="pb-3">Actions</th>
+            </tr>
+          </thead>
+          <tbody>
+            {filtered.map((item) => (
+              <tr key={`${item.name}-${item.endpoint}`} className="border-b border-white/5 text-slate-200">
+                <td className="py-4">{item.name}</td>
+                <td className="py-4 font-mono text-xs text-cyan-300">{item.endpoint}</td>
+                <td className="py-4">{item.type}</td>
+                <td className="py-4">
+                  <StatusBadge label={item.severity} state={item.severity?.toLowerCase() === 'critical' ? 'critical' : 'healthy'} />
+                </td>
+                <td className="py-4">{item.cvss}</td>
+                <td className="py-4">
+                  <div className="flex gap-2">
+                    <button className="rounded-xl bg-white/5 px-3 py-2 text-xs text-slate-200">View Details</button>
+                    <button className="rounded-xl bg-cyan-400/10 px-3 py-2 text-xs text-cyan-300">Remediate</button>
                   </div>
-                </div>
-                <div className="flex items-center gap-2 shrink-0 ml-3">
-                  <span className={`text-[10px] font-bold uppercase px-2 py-0.5 rounded-full ${colors.bg} ${colors.text}`}>
-                    {vuln.severity}
-                  </span>
-                  {isExpanded ? (
-                    <ChevronUp className="h-4 w-4 text-text-muted" />
-                  ) : (
-                    <ChevronDown className="h-4 w-4 text-text-muted" />
-                  )}
-                </div>
-              </button>
-
-              {isExpanded && (
-                <div className="px-4 pb-4 space-y-2 animate-fade-in">
-                  {vuln.url && (
-                    <div>
-                      <span className="text-[10px] font-medium text-text-muted uppercase">URL</span>
-                      <p className="text-xs font-mono text-accent-cyan break-all">{vuln.url}</p>
-                    </div>
-                  )}
-                  {vuln.payload && (
-                    <div>
-                      <span className="text-[10px] font-medium text-text-muted uppercase">Payload</span>
-                      <p className="text-xs font-mono text-severity-medium bg-bg-input rounded px-2 py-1 break-all">{vuln.payload}</p>
-                    </div>
-                  )}
-                  {vuln.evidence && (
-                    <div>
-                      <span className="text-[10px] font-medium text-text-muted uppercase">Evidence</span>
-                      <p className="text-xs text-text-secondary">{vuln.evidence}</p>
-                    </div>
-                  )}
-                  {vuln.description && (
-                    <div>
-                      <span className="text-[10px] font-medium text-text-muted uppercase">Description</span>
-                      <p className="text-xs text-text-secondary">{vuln.description}</p>
-                    </div>
-                  )}
-                  {vuln.recommendation && (
-                    <div className="bg-accent-emerald/5 border border-accent-emerald/10 rounded-lg px-3 py-2">
-                      <span className="text-[10px] font-medium text-accent-emerald uppercase">Recommendation</span>
-                      <p className="text-xs text-text-primary">{vuln.recommendation}</p>
-                    </div>
-                  )}
-                </div>
-              )}
-            </div>
-          );
-        })}
+                </td>
+              </tr>
+            ))}
+          </tbody>
+        </table>
+        {filtered.length === 0 ? <p className="py-10 text-center text-sm text-slate-500">No vulnerabilities in this filter yet.</p> : null}
       </div>
-    </div>
+    </GlassCard>
   );
 }

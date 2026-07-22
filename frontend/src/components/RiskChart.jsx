@@ -1,8 +1,10 @@
-import { useEffect, useRef } from 'react';
+import React from 'react';
 import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
 import { Doughnut } from 'react-chartjs-2';
 import { countBySeverity } from '../utils/helpers';
 import { PieChart } from 'lucide-react';
+import GlassCard from './ui/GlassCard';
+import SectionHeader from './ui/SectionHeader';
 
 ChartJS.register(ArcElement, Tooltip, Legend);
 
@@ -67,28 +69,26 @@ export default function RiskChart({ vulnerabilities }) {
   };
 
   return (
-    <div className="glass-panel p-6 sm:p-8 animate-fade-in">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-primary/10">
-          <PieChart className="h-5 w-5 text-accent-primary" />
-        </div>
-        <div>
-          <h3 className="font-semibold text-text-primary">Finding Distribution</h3>
-          <p className="text-xs text-text-muted">{total} total finding{total !== 1 ? 's' : ''}</p>
-        </div>
-      </div>
+    <GlassCard animateFloat glowColor="violet" delay={0.5}>
+      <SectionHeader 
+        title="Finding Distribution" 
+        subtitle={`${total} total finding${total !== 1 ? 's' : ''}`} 
+        icon={PieChart} 
+        color="violet" 
+      />
 
-      <div className="relative h-[220px]">
+      <div className="relative h-[220px] z-10">
+        <div className="absolute inset-0 bg-black/20 rounded-full blur-xl -z-10 transform scale-75"></div>
         <Doughnut data={data} options={options} />
         {/* Center label */}
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ marginBottom: '40px' }}>
           <div className="text-center">
-            <span className="text-3xl font-bold text-text-primary">{total}</span>
+            <span className="text-3xl font-mono text-white glow-text-cyan">{total}</span>
             <br />
-            <span className="text-[10px] text-text-muted uppercase tracking-wider">Findings</span>
+            <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">Findings</span>
           </div>
         </div>
       </div>
-    </div>
+    </GlassCard>
   );
 }

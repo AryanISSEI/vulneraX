@@ -1,6 +1,8 @@
-import { useEffect, useRef } from 'react';
+import React, { useEffect, useRef } from 'react';
 import { riskScoreColor } from '../utils/helpers';
 import { Gauge } from 'lucide-react';
+import GlassCard from './ui/GlassCard';
+import SectionHeader from './ui/SectionHeader';
 
 export default function RiskGauge({ score }) {
   const canvasRef = useRef(null);
@@ -14,6 +16,7 @@ export default function RiskGauge({ score }) {
     if (!canvas) return;
 
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     const dpr = window.devicePixelRatio || 1;
     const size = 200;
     canvas.width = size * dpr;
@@ -87,7 +90,6 @@ export default function RiskGauge({ score }) {
     function animate(now) {
       const elapsed = now - startTime;
       const progress = Math.min(elapsed / duration, 1);
-      // Ease out cubic
       const eased = 1 - Math.pow(1 - progress, 3);
       const current = startVal + (targetScore - startVal) * eased;
 
@@ -107,17 +109,19 @@ export default function RiskGauge({ score }) {
   }, [score, info.color]);
 
   return (
-    <div className="glass-panel p-6 sm:p-8 animate-fade-in flex flex-col items-center">
-      <div className="flex items-center gap-3 mb-4 self-start">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl" style={{ background: info.color + '15' }}>
-          <Gauge className="h-5 w-5" style={{ color: info.color }} />
-        </div>
-        <div>
-          <h3 className="font-semibold text-text-primary">Risk Score</h3>
-          <p className="text-xs font-medium" style={{ color: info.color }}>{info.label}</p>
-        </div>
+    <GlassCard animateFloat glowColor="cyan" className="flex flex-col items-center">
+      <div className="self-start w-full">
+        <SectionHeader 
+          title="Risk Score" 
+          subtitle={info.label} 
+          icon={Gauge} 
+          color="cyan" 
+        />
       </div>
-      <canvas ref={canvasRef} />
-    </div>
+      <div className="relative z-10 scale-110 mt-4">
+        <div className="absolute inset-0 bg-black/20 rounded-full blur-xl -z-10 transform scale-75"></div>
+        <canvas ref={canvasRef} />
+      </div>
+    </GlassCard>
   );
 }
