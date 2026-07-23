@@ -79,6 +79,8 @@ class VulnerabilityResult(BaseModel):
     payload: str = ""
     evidence: str = ""
     description: str = ""
+    impact: str = ""  # How dangerous this vulnerability is in the real world
+    exploit_scenario: str = ""  # Step-by-step how a hacker could exploit this
     recommendation: str = ""
 
 

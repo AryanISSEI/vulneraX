@@ -40,7 +40,9 @@ async def test_xss(target: str, crawl_data: dict) -> list[VulnerabilityResult]:
                                 payload=payload,
                                 evidence=f"Payload reflected unencoded in response body",
                                 description="The application reflects user input without proper encoding, allowing script injection.",
-                                recommendation="Implement output encoding/escaping. Use Content-Security-Policy headers.",
+                                impact="An attacker can execute arbitrary JavaScript in a victim's browser, stealing session cookies, credentials, and personal data. This can lead to full account takeover, identity theft, or malware distribution to every user who clicks a malicious link.",
+                                exploit_scenario="1. Attacker crafts a URL containing malicious JavaScript in the vulnerable parameter. 2. Victim clicks the link (sent via email, social media, or embedded in another site). 3. The server reflects the script back in the page without sanitization. 4. The victim's browser executes the script, sending their session cookie to the attacker's server. 5. Attacker uses the stolen cookie to impersonate the victim and access their account.",
+                                recommendation="Implement output encoding/escaping for all user input. Deploy a strict Content-Security-Policy header. Use HttpOnly cookies to prevent JavaScript access to session tokens.",
                             ))
                             break  # One finding per parameter is enough
                     except Exception:
@@ -78,7 +80,9 @@ async def test_xss(target: str, crawl_data: dict) -> list[VulnerabilityResult]:
                                 payload=payload,
                                 evidence=f"Payload reflected unencoded via {method} form submission",
                                 description="The application reflects form input without proper encoding.",
-                                recommendation="Implement server-side output encoding and CSP headers.",
+                                impact="An attacker can inject malicious scripts through form submissions, potentially hijacking user sessions, defacing the website, or redirecting users to phishing pages. Since forms often handle sensitive operations, this could compromise financial transactions or personal data.",
+                                exploit_scenario="1. Attacker identifies the vulnerable form input field. 2. They submit the form with a JavaScript payload instead of normal data. 3. The server includes the unescaped payload in the response page. 4. Any user viewing the affected page has their browser execute the malicious script. 5. The script can steal credentials, install keyloggers, or perform actions on behalf of the victim.",
+                                recommendation="Implement server-side output encoding and CSP headers. Validate and sanitize all form inputs both client-side and server-side. Use frameworks that auto-escape output by default.",
                             ))
                             break
                     except Exception:

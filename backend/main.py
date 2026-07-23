@@ -6,6 +6,7 @@ import os
 
 from database import init_db
 from api.scan import router as scan_router
+from api.auth import router as auth_router
 
 
 @asynccontextmanager
@@ -19,7 +20,7 @@ async def lifespan(app: FastAPI):
 
 app = FastAPI(
     title="VulneraX API",
-    description="AI-Powered Security Assessment Platform",
+    description="Security Assessment Platform",
     version="1.0.0",
     lifespan=lifespan,
 )
@@ -35,6 +36,7 @@ app.add_middleware(
 
 # Include API routes
 app.include_router(scan_router, prefix="/api")
+app.include_router(auth_router, prefix="/api/auth")
 
 
 @app.get("/")

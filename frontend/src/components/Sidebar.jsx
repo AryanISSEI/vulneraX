@@ -1,65 +1,72 @@
-import React from 'react';
-import {
-  Activity,
-  BrainCircuit,
-  FileText,
-  Radar,
-  ScanSearch,
-  Settings,
-  Shield,
-  Siren,
-} from 'lucide-react';
-import { NavLink } from 'react-router-dom';
-import StatusBadge from './ui/StatusBadge';
-
-const navItems = [
-  { to: '/', label: 'Dashboard', icon: Activity, end: true },
-  { to: '/new-scan', label: 'New Scan', icon: ScanSearch },
-  { to: '/target-assets', label: 'Target Assets', icon: Radar },
-  { to: '/vulnerabilities', label: 'Vulnerabilities', icon: Siren },
-  { to: '/threat-predictions', label: 'Threat Predictions', icon: BrainCircuit },
-  { to: '/reports', label: 'Reports', icon: FileText },
-  { to: '/settings', label: 'Settings', icon: Settings },
-];
+import { useState } from 'react';
+import { NavLink, useLocation } from 'react-router-dom';
+import { Shield, History, PlusSquare, Globe } from 'lucide-react';
+import { motion } from 'framer-motion';
+import { useAuth } from '../lib/AuthContext';
 
 export default function Sidebar() {
+  const location = useLocation();
+  const { user } = useAuth();
+
+  const menuItems = [
+    { id: 'dashboard', label: 'Dashboard', icon: Shield, path: '/' },
+    { id: 'websites', label: 'Websites', icon: Globe, path: '/websites' },
+    { id: 'history', label: 'History', icon: History, path: '/history' },
+  ];
+
   return (
-    <aside className="w-full max-w-[280px] shrink-0">
-      <div className="sticky top-6 h-[calc(100vh-3rem)] rounded-[28px] border border-white/10 bg-slate-950/80 p-5 backdrop-blur-xl">
+    <div className="w-64 h-full border-r border-border bg-card flex flex-col z-20">
+      <div className="h-16 flex items-center px-6 border-b border-border">
         <div className="flex items-center gap-3">
-          <div className="rounded-2xl bg-cyan-400/10 p-3 text-cyan-300 ring-1 ring-cyan-400/20">
-            <Shield className="h-6 w-6" />
+          <div className="h-8 w-8 rounded-md bg-primary flex items-center justify-center">
+            <Shield className="h-5 w-5 text-primary-foreground" />
           </div>
-          <div>
-            <p className="text-lg font-semibold text-white">VulneraX</p>
-            <p className="text-[10px] uppercase tracking-widest text-slate-400">AI Security Platform</p>
-          </div>
-        </div>
-
-        <nav className="mt-10 space-y-2">
-          {navItems.map(({ to, label, icon: Icon, end }) => (
-            <NavLink
-              key={to}
-              to={to}
-              end={end}
-              className={({ isActive }) =>
-                `flex items-center gap-3 rounded-2xl px-4 py-3 text-sm transition ${
-                  isActive
-                    ? 'bg-cyan-400/10 text-cyan-300 ring-1 ring-cyan-400/25'
-                    : 'text-slate-300 hover:bg-white/5 hover:text-white'
-                }`
-              }
-            >
-              <Icon className="h-4 w-4" />
-              {label}
-            </NavLink>
-          ))}
-        </nav>
-
-        <div className="mt-10">
-          <StatusBadge label="System Operational" state="healthy" />
+          <span className="font-bold text-lg tracking-tight">VulneraX</span>
         </div>
       </div>
-    </aside>
+
+      <nav className="flex-1 px-4 py-6 space-y-1 overflow-y-auto">
+        <div className="mb-4 px-2">
+          <p className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+            Menu
+          </p>
+        </div>
+        {menuItems.map((item) => {
+          const isActive = location.pathname === item.path;
+          return (
+            <NavLink
+              key={item.id}
+              to={item.path}
+              className="relative flex items-center gap-3 px-3 py-2 rounded-md text-sm font-medium transition-colors hover:text-foreground text-muted-foreground"
+            >
+              {isActive && (
+                <motion.div
+                  layoutId="active-nav-bg"
+                  className="absolute inset-0 bg-accent rounded-md"
+                  initial={false}
+                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                />
+              )}
+              <item.icon className={`h-4 w-4 relative z-10 ${isActive ? 'text-primary' : ''}`} />
+              <span className={`relative z-10 ${isActive ? 'text-foreground font-semibold' : ''}`}>
+                {item.label}
+              </span>
+            </NavLink>
+          );
+        })}
+      </nav>
+
+      <div className="p-4 border-t border-border mt-auto">
+        <div className="flex items-center gap-3 px-2 py-2 rounded-md hover:bg-accent hover:text-accent-foreground cursor-pointer transition-colors">
+          <div className="h-8 w-8 rounded-full bg-secondary border border-border flex items-center justify-center shrink-0 overflow-hidden">
+            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=Admin`} alt="User" className="h-full w-full object-cover" />
+          </div>
+          <div className="flex flex-col flex-1 overflow-hidden">
+            <span className="text-sm font-medium truncate">{user?.username || 'Guest'}</span>
+            <span className="text-xs text-muted-foreground truncate">User</span>
+          </div>
+        </div>
+      </div>
+    </div>
   );
 }

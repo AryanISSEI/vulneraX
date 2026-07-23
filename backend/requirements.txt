@@ -12,3 +12,9 @@ dnspython
 aiosqlite
 aiofiles
 python-multipart
+celery
+redis
+asyncpg
+sqlalchemy
+PyJWT
+passlib[bcrypt]

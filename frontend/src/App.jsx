@@ -1,33 +1,73 @@
-import React from 'react';
-import { BrowserRouter, Route, Routes } from 'react-router-dom';
+import { BrowserRouter, Routes, Route, useLocation, Navigate } from 'react-router-dom';
+import { AnimatePresence, motion } from 'framer-motion';
 import Sidebar from './components/Sidebar';
 import Dashboard from './pages/Dashboard';
-import NewScan from './pages/NewScan';
-import Reports from './pages/Reports';
-import Settings from './pages/Settings';
-import TargetAssets from './pages/TargetAssets';
-import ThreatPredictions from './pages/ThreatPredictions';
-import Vulnerabilities from './pages/Vulnerabilities';
+import History from './pages/History';
+import Websites from './pages/Websites';
+import Login from './pages/Login';
+import Register from './pages/Register';
+
+import { ThemeProvider } from './components/ThemeProvider';
+import Header from './components/Header';
+import CustomCursor from './components/CustomCursor';
+import { AuthProvider, useAuth } from './lib/AuthContext';
+
+function ProtectedRoute({ children }) {
+  const { user, loading } = useAuth();
+  if (loading) return <div className="h-screen w-screen flex items-center justify-center">Loading...</div>;
+  if (!user) return <Navigate to="/login" />;
+  return children;
+}
+
+function MainLayout() {
+  const location = useLocation();
+  
+  return (
+    <div className="flex h-screen w-screen overflow-hidden bg-background">
+      <Sidebar />
+      <div className="flex-1 flex flex-col overflow-hidden relative">
+        <Header />
+        <main className="flex-1 overflow-auto flex flex-col relative">
+          <AnimatePresence mode="wait">
+            <motion.div
+              key={location.pathname}
+              initial={{ opacity: 0, y: 10 }}
+              animate={{ opacity: 1, y: 0 }}
+              exit={{ opacity: 0, y: -10 }}
+              transition={{ duration: 0.2 }}
+              className="w-full h-full flex flex-col"
+            >
+              <Routes location={location}>
+                <Route path="/" element={<Dashboard />} />
+                <Route path="/websites" element={<Websites />} />
+                <Route path="/history" element={<History />} />
+                <Route path="*" element={<Navigate to="/" />} />
+              </Routes>
+            </motion.div>
+          </AnimatePresence>
+        </main>
+      </div>
+    </div>
+  );
+}
 
 export default function App() {
   return (
-    <BrowserRouter>
-      <div className="min-h-screen bg-[radial-gradient(circle_at_top,_rgba(0,240,255,0.12),_transparent_30%),_#0B0F17] px-4 py-6 text-white lg:px-6">
-        <div className="mx-auto flex max-w-[1600px] gap-6">
-          <Sidebar />
-          <main className="min-h-[calc(100vh-3rem)] flex-1 rounded-[32px] border border-white/10 bg-slate-950/60 p-6 backdrop-blur-xl lg:p-8">
-            <Routes>
-              <Route path="/" element={<Dashboard />} />
-              <Route path="/new-scan" element={<NewScan />} />
-              <Route path="/target-assets" element={<TargetAssets />} />
-              <Route path="/vulnerabilities" element={<Vulnerabilities />} />
-              <Route path="/threat-predictions" element={<ThreatPredictions />} />
-              <Route path="/reports" element={<Reports />} />
-              <Route path="/settings" element={<Settings />} />
-            </Routes>
-          </main>
-        </div>
-      </div>
-    </BrowserRouter>
+    <ThemeProvider defaultTheme="dark" storageKey="vulnerax-theme">
+      <AuthProvider>
+        <BrowserRouter>
+          <CustomCursor />
+          <Routes>
+            <Route path="/login" element={<Login />} />
+            <Route path="/register" element={<Register />} />
+            <Route path="/*" element={
+              <ProtectedRoute>
+                <MainLayout />
+              </ProtectedRoute>
+            } />
+          </Routes>
+        </BrowserRouter>
+      </AuthProvider>
+    </ThemeProvider>
   );
 }

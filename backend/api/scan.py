@@ -1,8 +1,13 @@
 import uuid
 import json
 import asyncio
+import re
+import ipaddress
+import os
+from collections import defaultdict
+import time
 from datetime import datetime, timezone
-from fastapi import APIRouter, BackgroundTasks, HTTPException
+from fastapi import APIRouter, HTTPException, Request, Depends
 from fastapi.responses import FileResponse, JSONResponse
 
 from models import (
@@ -10,6 +15,8 @@ from models import (
     DNSResult, FingerprintResult, SSLResult, RiskScore
 )
 from database import save_scan, get_scan, get_all_scans, update_scan_status, update_scan_results
+from core.security import get_current_user
+from core.celery_app import celery
 
 from scanner.dns_lookup import dns_lookup
 from scanner.port_scanner import scan_ports
@@ -29,19 +36,69 @@ from scanner.report import generate_json_report, generate_html_report, generate_
 
 router = APIRouter()
 
-# In-memory store for active scan results (for real-time status)
-active_scans: dict[str, ScanResult] = {}
+# --- Concurrency & rate-limiting controls ---
+_RATE_WINDOW_SECONDS = 60
+_RATE_MAX_REQUESTS = 3
+_rate_tracker: dict[str, list[float]] = defaultdict(list)
+
+# Strict regex: valid hostnames (RFC 952/1123) or IPv4 addresses only
+_DOMAIN_RE = re.compile(
+    r"^(?:[a-zA-Z0-9](?:[a-zA-Z0-9-]{0,61}[a-zA-Z0-9])?\.)+[a-zA-Z]{2,}$"
+)
+_IPV4_RE = re.compile(r"^(?:\d{1,3}\.){3}\d{1,3}$")
 
 
-async def run_scan(scan_id: str, target: str):
-    """Execute the full scan pipeline as a background task."""
+def _validate_target(raw: str) -> str:
+    cleaned = raw.strip()
+    for prefix in ("https://", "http://"):
+        if cleaned.lower().startswith(prefix):
+            cleaned = cleaned[len(prefix):]
+    cleaned = cleaned.strip("/").split("/")[0]
+
+    if not cleaned:
+        raise HTTPException(status_code=400, detail="Target is required")
+
+    if not (_DOMAIN_RE.match(cleaned) or _IPV4_RE.match(cleaned)):
+        raise HTTPException(
+            status_code=400,
+            detail="Invalid target. Provide a valid domain name or IPv4 address.",
+        )
+
+    if _IPV4_RE.match(cleaned):
+        try:
+            ip = ipaddress.ip_address(cleaned)
+            if ip.is_private or ip.is_loopback or ip.is_link_local or ip.is_multicast:
+                raise HTTPException(
+                    status_code=400,
+                    detail="Scanning private, loopback, or link-local addresses is not allowed.",
+                )
+        except ValueError:
+            raise HTTPException(status_code=400, detail="Invalid IP address.")
+
+    return cleaned
+
+
+def _safe_report_basename(filepath: str) -> str:
+    return os.path.basename(filepath)
+
+
+async def save_partial_results(result: ScanResult):
+    await update_scan_results(
+        result.scan_id,
+        result.model_dump_json(),
+        result.risk_score.overall if result.risk_score else 100,
+        result.status
+    )
+
+
+async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
+    """Execute the full scan pipeline."""
     result = ScanResult(
         scan_id=scan_id,
         target=target,
         timestamp=datetime.now(timezone.utc).isoformat(),
         status="running",
     )
-    active_scans[scan_id] = result
 
     try:
         # Phase 1: DNS Lookup
@@ -49,17 +106,30 @@ async def run_scan(scan_id: str, target: str):
         await update_scan_status(scan_id, "running", "DNS Lookup")
         try:
             result.dns = await dns_lookup(target)
-        except Exception as e:
+        except Exception:
             result.dns = DNSResult()
+        await save_partial_results(result)
 
         # Phase 2: Port Scanning
         result.current_phase = "Port Scanning"
         await update_scan_status(scan_id, "running", "Port Scanning")
         ip = result.dns.ip_address if result.dns else target
+
+        if ip:
+            try:
+                resolved = ipaddress.ip_address(ip)
+                if resolved.is_private or resolved.is_loopback or resolved.is_link_local or resolved.is_multicast:
+                    raise ValueError(f"Resolved IP {ip} is in a restricted range. Scan aborted.")
+            except ValueError as ve:
+                result.status = "error"
+                result.error = str(ve)
+                result.current_phase = "Error"
+                await save_partial_results(result)
+                return
+
         if ip:
             try:
                 result.ports = await scan_ports(ip)
-                # Grab banners for open ports
                 for port_result in result.ports:
                     if not port_result.banner:
                         try:
@@ -68,8 +138,9 @@ async def run_scan(scan_id: str, target: str):
                                 port_result.banner = banner
                         except Exception:
                             pass
-            except Exception as e:
+            except Exception:
                 pass
+        await save_partial_results(result)
 
         # Phase 3: Website Fingerprinting
         result.current_phase = "Fingerprinting"
@@ -78,6 +149,7 @@ async def run_scan(scan_id: str, target: str):
             result.fingerprint = await fingerprint(target)
         except Exception:
             result.fingerprint = FingerprintResult()
+        await save_partial_results(result)
 
         # Phase 4: Security Headers
         result.current_phase = "Checking Headers"
@@ -86,6 +158,7 @@ async def run_scan(scan_id: str, target: str):
             result.headers = await check_headers(target)
         except Exception:
             pass
+        await save_partial_results(result)
 
         # Phase 5: Cookie Analysis
         result.current_phase = "Analyzing Cookies"
@@ -94,6 +167,7 @@ async def run_scan(scan_id: str, target: str):
             result.cookies = await analyze_cookies(target)
         except Exception:
             pass
+        await save_partial_results(result)
 
         # Phase 6: SSL Scan
         result.current_phase = "SSL Scan"
@@ -102,18 +176,19 @@ async def run_scan(scan_id: str, target: str):
             result.ssl = await scan_ssl(target)
         except Exception:
             result.ssl = SSLResult()
+        await save_partial_results(result)
 
         # Phase 7: Crawling
         result.current_phase = "Crawling Website"
         await update_scan_status(scan_id, "running", "Crawling Website")
         crawl_data = {"urls": [], "forms": [], "params": []}
-        # Only crawl if HTTP/HTTPS ports are open
         has_http = any(p.port in (80, 443, 8080, 8443, 8000, 3000) for p in result.ports) or True
         if has_http:
             try:
                 crawl_data = await crawl(target)
             except Exception:
                 pass
+        await save_partial_results(result)
 
         # Phase 8: Vulnerability Tests
         result.current_phase = "Testing Vulnerabilities"
@@ -131,6 +206,7 @@ async def run_scan(scan_id: str, target: str):
         for vr in vuln_results:
             if isinstance(vr, list):
                 result.vulnerabilities.extend(vr)
+        await save_partial_results(result)
 
         # Phase 9: Calculate Risk Score
         result.current_phase = "Calculating Risk Score"
@@ -145,38 +221,38 @@ async def run_scan(scan_id: str, target: str):
         # Done
         result.status = "completed"
         result.current_phase = "Completed"
-
-        # Save to database
-        await update_scan_results(
-            scan_id,
-            result.model_dump_json(),
-            result.risk_score.overall if result.risk_score else 100,
-            "completed"
-        )
+        await save_partial_results(result)
 
     except Exception as e:
         result.status = "error"
         result.error = str(e)
         result.current_phase = "Error"
-        await update_scan_status(scan_id, "error", f"Error: {str(e)}")
-
-    active_scans[scan_id] = result
+        await save_partial_results(result)
 
 
 @router.post("/scan", response_model=ScanResponse)
-async def start_scan(request: ScanRequest, background_tasks: BackgroundTasks):
+async def start_scan(request: ScanRequest, req: Request, user_id: int = Depends(get_current_user)):
     """Start a new security scan."""
-    scan_id = str(uuid.uuid4())
-    target = request.target.strip().replace("https://", "").replace("http://", "").strip("/")
+    client_ip = req.client.host if req.client else "unknown"
+    now = time.monotonic()
+    _rate_tracker[client_ip] = [
+        ts for ts in _rate_tracker[client_ip] if now - ts < _RATE_WINDOW_SECONDS
+    ]
+    if len(_rate_tracker[client_ip]) >= _RATE_MAX_REQUESTS:
+        raise HTTPException(
+            status_code=429,
+            detail=f"Rate limit exceeded. Max {_RATE_MAX_REQUESTS} scans per {_RATE_WINDOW_SECONDS}s.",
+        )
+    _rate_tracker[client_ip].append(now)
 
-    if not target:
-        raise HTTPException(status_code=400, detail="Target is required")
+    scan_id = str(uuid.uuid4())
+    target = _validate_target(request.target)
 
     timestamp = datetime.now(timezone.utc).isoformat()
-    await save_scan(scan_id, target, timestamp, "pending")
+    await save_scan(scan_id, target, timestamp, "pending", user_id=user_id)
 
-    # Start scan in background
-    background_tasks.add_task(run_scan, scan_id, target)
+    # Start scan via Celery
+    celery.send_task("tasks.run_scan_task", args=[scan_id, target, user_id])
 
     return ScanResponse(
         scan_id=scan_id,
@@ -186,21 +262,10 @@ async def start_scan(request: ScanRequest, background_tasks: BackgroundTasks):
 
 
 @router.get("/scan/{scan_id}/status")
-async def get_scan_status(scan_id: str):
+async def get_scan_status(scan_id: str, user_id: int = Depends(get_current_user)):
     """Get the current status of a scan."""
-    # Check active scans first for real-time data
-    if scan_id in active_scans:
-        result = active_scans[scan_id]
-        return {
-            "scan_id": scan_id,
-            "status": result.status,
-            "current_phase": result.current_phase,
-            "target": result.target,
-        }
-
-    # Check database
     scan = await get_scan(scan_id)
-    if not scan:
+    if not scan or scan.get("user_id") != user_id:
         raise HTTPException(status_code=404, detail="Scan not found")
 
     return {
@@ -212,28 +277,25 @@ async def get_scan_status(scan_id: str):
 
 
 @router.get("/scan/{scan_id}/results")
-async def get_scan_results(scan_id: str):
-    """Get the full results of a completed scan."""
-    # Check active scans first
-    if scan_id in active_scans:
-        return active_scans[scan_id].model_dump()
-
-    # Check database
+async def get_scan_results(scan_id: str, user_id: int = Depends(get_current_user)):
+    """Get the full results of a scan."""
     scan = await get_scan(scan_id)
-    if not scan:
+    if not scan or scan.get("user_id") != user_id:
         raise HTTPException(status_code=404, detail="Scan not found")
 
     try:
         results = json.loads(scan.get("results_json", "{}"))
+        if not results:
+            return {}
         return results
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Failed to parse scan results")
 
 
 @router.get("/history")
-async def get_scan_history():
-    """Get all past scans."""
-    scans = await get_all_scans()
+async def get_scan_history(user_id: int = Depends(get_current_user)):
+    """Get all past scans for current user."""
+    scans = await get_all_scans(user_id=user_id)
     return {
         "scans": [
             ScanSummary(
@@ -249,34 +311,29 @@ async def get_scan_history():
 
 
 @router.get("/report/{scan_id}")
-async def get_report(scan_id: str, format: str = "json"):
+async def get_report(scan_id: str, format: str = "json", user_id: int = Depends(get_current_user)):
     """Generate and download a report in the specified format."""
-    # Get scan result
-    scan_result = None
-
-    if scan_id in active_scans:
-        scan_result = active_scans[scan_id]
-    else:
-        scan = await get_scan(scan_id)
-        if not scan:
-            raise HTTPException(status_code=404, detail="Scan not found")
-        try:
-            data = json.loads(scan.get("results_json", "{}"))
-            scan_result = ScanResult(**data)
-        except Exception:
-            raise HTTPException(status_code=500, detail="Failed to parse scan data")
+    scan = await get_scan(scan_id)
+    if not scan or scan.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Scan not found")
+        
+    try:
+        data = json.loads(scan.get("results_json", "{}"))
+        scan_result = ScanResult(**data)
+    except Exception:
+        raise HTTPException(status_code=500, detail="Failed to parse scan data")
 
     if scan_result.status != "completed":
         raise HTTPException(status_code=400, detail="Scan is not completed yet")
 
     if format == "json":
         filepath = generate_json_report(scan_result)
-        return FileResponse(filepath, filename=filepath.split("/")[-1].split("\\")[-1], media_type="application/json")
+        return FileResponse(filepath, filename=_safe_report_basename(filepath), media_type="application/json")
     elif format == "html":
         filepath = generate_html_report(scan_result)
-        return FileResponse(filepath, filename=filepath.split("/")[-1].split("\\")[-1], media_type="text/html")
+        return FileResponse(filepath, filename=_safe_report_basename(filepath), media_type="text/html")
     elif format == "pdf":
         filepath = generate_pdf_report(scan_result)
-        return FileResponse(filepath, filename=filepath.split("/")[-1].split("\\")[-1], media_type="application/pdf")
+        return FileResponse(filepath, filename=_safe_report_basename(filepath), media_type="application/pdf")
     else:
         raise HTTPException(status_code=400, detail="Invalid format. Use: json, html, pdf")

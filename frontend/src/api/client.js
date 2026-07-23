@@ -2,27 +2,41 @@ import axios from 'axios';
 
 const client = axios.create({
   baseURL: '/api',
-  timeout: 300000, // 5 minutes for long scans
+  timeout: 300000,
   headers: {
     'Content-Type': 'application/json',
   },
 });
 
-// Request interceptor
 client.interceptors.request.use(
-  (config) => config,
+  (config) => {
+    const token = localStorage.getItem('vulnerax_token');
+    if (token) {
+      config.headers.Authorization = `Bearer ${token}`;
+    }
+    return config;
+  },
   (error) => Promise.reject(error)
 );
 
-// Response interceptor
 client.interceptors.response.use(
   (response) => response,
   (error) => {
+    if (error.response?.status === 401) {
+      localStorage.removeItem('vulnerax_token');
+      if (window.location.pathname !== '/login') {
+        window.location.href = '/login';
+      }
+    }
     const message = error.response?.data?.detail || error.message || 'An error occurred';
     console.error('[VulneraX API]', message);
     return Promise.reject(error);
   }
 );
+
+export const login = (username, password) => client.post('/auth/login', { username, password });
+export const register = (username, password) => client.post('/auth/register', { username, password });
+export const getMe = () => client.get('/auth/me');
 
 export const startScan = (target) => client.post('/scan', { target });
 export const getScanStatus = (scanId) => client.get(`/scan/${scanId}/status`);
