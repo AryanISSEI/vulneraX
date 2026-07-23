@@ -1,26 +1,19 @@
 import { useState } from 'react';
-import { Search, Plus, Globe, Activity, Clock, ShieldAlert, User, Scan, Edit, Trash2, ChevronLeft, ChevronRight } from 'lucide-react';
+import { Search, Plus, Filter, Download, MoreVertical, CheckCircle2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { Button } from '../components/ui/button';
-import { Input } from '../components/ui/input';
-import { Card, CardContent, CardHeader, CardTitle } from '../components/ui/card';
-import { Badge } from '../components/ui/badge';
-import { Table, TableBody, TableCell, TableHead, TableHeader, TableRow } from '../components/ui/table';
 
 export default function Websites() {
   const [websites] = useState([
-    { id: 1, url: 'example.com', status: 'Healthy', lastScan: '2 hours ago', risk: 'Low', ip: '93.184.216.34' },
-    { id: 2, url: 'test.vulnweb.com', status: 'Vulnerable', lastScan: '1 day ago', risk: 'High', ip: '176.28.50.165' },
-    { id: 3, url: 'scanme.nmap.org', status: 'Warning', lastScan: '5 hours ago', risk: 'Medium', ip: '45.33.32.156' },
-    { id: 4, url: 'demo.testfire.net', status: 'Vulnerable', lastScan: '3 days ago', risk: 'Critical', ip: '65.61.137.117' },
+    { id: 1, domain: 'app.example.com', status: 'Active', scanDate: '2 hours ago', vulns: { critical: 2, high: 5, medium: 12, low: 24 } },
+    { id: 2, domain: 'api.example.com', status: 'Inactive', scanDate: '1 day ago', vulns: { critical: 0, high: 2, medium: 8, low: 15 } },
+    { id: 3, domain: 'portal.example.com', status: 'Active', scanDate: '2 days ago', vulns: { critical: 5, high: 12, medium: 34, low: 89 } },
+    { id: 4, domain: 'dev.example.com', status: 'Inactive', scanDate: '5 days ago', vulns: { critical: 0, high: 0, medium: 3, low: 12 } },
+    { id: 5, domain: 'test.example.com', status: 'Active', scanDate: '1 week ago', vulns: { critical: 1, high: 4, medium: 15, low: 42 } },
   ]);
 
   const container = {
     hidden: { opacity: 0 },
-    show: {
-      opacity: 1,
-      transition: { staggerChildren: 0.1 }
-    }
+    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
   };
 
   const item = {
@@ -28,106 +21,114 @@ export default function Websites() {
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
 
-  const getRiskBadge = (risk) => {
-    switch (risk) {
-      case 'Low': return <Badge className="bg-emerald-500/10 text-emerald-500 hover:bg-emerald-500/20 shadow-none border-none">Low</Badge>;
-      case 'Medium': return <Badge className="bg-amber-500/10 text-amber-500 hover:bg-amber-500/20 shadow-none border-none">Medium</Badge>;
-      case 'High': return <Badge className="bg-rose-500/10 text-rose-500 hover:bg-rose-500/20 shadow-none border-none">High</Badge>;
-      case 'Critical': return <Badge variant="destructive" className="shadow-none">Critical</Badge>;
-      default: return <Badge variant="outline">{risk}</Badge>;
-    }
-  };
-
-  const getStatusIcon = (status) => {
-    switch (status) {
-      case 'Healthy': return <Activity className="h-4 w-4 text-emerald-500" />;
-      case 'Warning': return <Activity className="h-4 w-4 text-amber-500" />;
-      case 'Vulnerable': return <ShieldAlert className="h-4 w-4 text-rose-500" />;
-      default: return <Globe className="h-4 w-4 text-muted-foreground" />;
-    }
-  };
-
   return (
-    <div className="w-full h-full p-8 flex flex-col space-y-6">
-      <div className="flex justify-between items-center shrink-0">
+    <div className="w-full h-full p-8 md:p-12 flex flex-col space-y-8 max-w-7xl mx-auto">
+      <div className="flex justify-between items-start shrink-0">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight">Websites</h1>
-          <p className="text-muted-foreground mt-1">Manage and monitor your target assets</p>
+          <h1 className="text-3xl font-bold tracking-tight text-foreground">Websites Interfaces</h1>
+          <p className="text-muted-foreground mt-1">Welcome back, user</p>
         </div>
-        <Button>
-          <Plus className="h-4 w-4 mr-2" />
-          New Target
-        </Button>
+        <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium transition-colors shadow-sm">
+          <Plus className="h-5 w-5" />
+          Add Website
+        </button>
       </div>
 
-      <Card className="flex-1 flex flex-col overflow-hidden">
-        <CardHeader className="flex flex-row items-center justify-between border-b bg-muted/20 pb-4">
-          <CardTitle className="text-lg">Monitored Assets</CardTitle>
-          <div className="relative w-64">
-            <Search className="absolute left-2.5 top-2.5 h-4 w-4 text-muted-foreground" />
-            <Input placeholder="Search targets..." className="pl-9" />
+      <div className="flex-1 bg-card rounded-xl shadow-sm border border-border flex flex-col overflow-hidden">
+        {/* Table Toolbar */}
+        <div className="p-4 border-b border-border flex flex-wrap items-center justify-between gap-4 bg-card">
+          <div className="flex items-center gap-3">
+            <div className="relative">
+              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
+              <input 
+                type="text" 
+                placeholder="Search..." 
+                className="pl-9 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 w-64 bg-input text-foreground"
+              />
+            </div>
+            <select className="border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none bg-input">
+              <option>Status: All</option>
+              <option>Active</option>
+              <option>Inactive</option>
+            </select>
+            <button className="p-2 border border-border rounded-lg text-muted-foreground hover:bg-secondary transition-colors bg-card">
+              <Filter className="h-4 w-4" />
+            </button>
           </div>
-        </CardHeader>
-        <CardContent className="flex-1 p-0 overflow-auto">
-          <Table>
-            <TableHeader className="sticky top-0 bg-background/95 backdrop-blur z-10 shadow-sm">
-              <TableRow>
-                <TableHead className="w-[300px]">Target URL</TableHead>
-                <TableHead>IP Address</TableHead>
-                <TableHead>Status</TableHead>
-                <TableHead>Risk Level</TableHead>
-                <TableHead>Last Scan</TableHead>
-                <TableHead className="text-right">Actions</TableHead>
-              </TableRow>
-            </TableHeader>
-            <TableBody as={motion.tbody} variants={container} initial="hidden" animate="show">
+          
+          <button className="flex items-center gap-2 text-sm text-foreground border border-border px-4 py-2 rounded-lg hover:bg-secondary transition-colors bg-card">
+            <Download className="h-4 w-4" />
+            Export
+          </button>
+        </div>
+
+        {/* Table */}
+        <div className="flex-1 overflow-auto bg-card">
+          <table className="w-full text-left border-collapse min-w-[800px]">
+            <thead className="bg-secondary/50 sticky top-0 z-10">
+              <tr>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Domain</th>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scan Date</th>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vulnerabilities</th>
+                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
+              </tr>
+            </thead>
+            <motion.tbody 
+              className="divide-y divide-border bg-card"
+              variants={container}
+              initial="hidden"
+              animate="show"
+            >
               {websites.map((site) => (
-                <TableRow key={site.id} as={motion.tr} variants={item}>
-                  <TableCell className="font-medium">
+                <motion.tr key={site.id} variants={item} className="hover:bg-secondary/50 transition-colors">
+                  <td className="px-6 py-4">
                     <div className="flex items-center gap-3">
-                      <div className="h-10 w-10 rounded-full bg-primary/10 flex items-center justify-center border border-primary/20 shrink-0">
-                        <Globe className="h-5 w-5 text-primary" />
-                      </div>
-                      {site.url}
+                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                      <span className="font-medium text-foreground">{site.domain}</span>
                     </div>
-                  </TableCell>
-                  <TableCell className="text-muted-foreground font-mono text-xs">{site.ip}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2">
-                      {getStatusIcon(site.status)}
-                      <span className="text-sm">{site.status}</span>
+                  </td>
+                  <td className="px-6 py-4">
+                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                      site.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'
+                    }`}>
+                      {site.status}
+                    </span>
+                  </td>
+                  <td className="px-6 py-4 text-sm text-muted-foreground">
+                    {site.scanDate}
+                  </td>
+                  <td className="px-6 py-4">
+                    <div className="flex items-center gap-1.5">
+                      <div className="flex items-center justify-center w-7 h-7 rounded bg-red-500/10 text-red-500 text-xs font-bold">{site.vulns.critical}</div>
+                      <div className="flex items-center justify-center w-7 h-7 rounded bg-orange-500/10 text-orange-500 text-xs font-bold">{site.vulns.high}</div>
+                      <div className="flex items-center justify-center w-7 h-7 rounded bg-yellow-500/10 text-yellow-500 text-xs font-bold">{site.vulns.medium}</div>
+                      <div className="flex items-center justify-center w-7 h-7 rounded bg-blue-500/10 text-blue-500 text-xs font-bold">{site.vulns.low}</div>
                     </div>
-                  </TableCell>
-                  <TableCell>{getRiskBadge(site.risk)}</TableCell>
-                  <TableCell>
-                    <div className="flex items-center gap-2 text-muted-foreground">
-                      <Clock className="h-3 w-3" />
-                      <span className="text-xs">{site.lastScan}</span>
-                    </div>
-                  </TableCell>
-                  <TableCell className="text-right">
-                    <div className="flex items-center justify-end gap-1 text-muted-foreground">
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-foreground"><User className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-primary"><Scan className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-foreground"><Edit className="h-4 w-4" /></Button>
-                      <Button variant="ghost" size="icon" className="h-8 w-8 hover:text-destructive"><Trash2 className="h-4 w-4" /></Button>
-                    </div>
-                  </TableCell>
-                </TableRow>
+                  </td>
+                  <td className="px-6 py-4 text-right">
+                    <button className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-secondary">
+                      <MoreVertical className="h-5 w-5" />
+                    </button>
+                  </td>
+                </motion.tr>
               ))}
-            </TableBody>
-          </Table>
-        </CardContent>
-        <div className="border-t border-border p-4 flex items-center justify-end bg-muted/10">
-          <div className="flex items-center gap-2">
-            <Button variant="outline" size="icon" className="h-8 w-8" disabled><ChevronLeft className="h-4 w-4" /></Button>
-            <Button variant="default" size="icon" className="h-8 w-8">1</Button>
-            <Button variant="outline" size="icon" className="h-8 w-8">2</Button>
-            <Button variant="outline" size="icon" className="h-8 w-8">3</Button>
-            <Button variant="outline" size="icon" className="h-8 w-8"><ChevronRight className="h-4 w-4" /></Button>
+            </motion.tbody>
+          </table>
+        </div>
+        
+        {/* Pagination placeholder */}
+        <div className="p-4 border-t border-border flex items-center justify-between text-sm text-muted-foreground bg-card">
+          <span>Showing 1 to 5 of 12 entries</span>
+          <div className="flex items-center gap-1">
+            <button className="px-3 py-1 border border-border rounded hover:bg-secondary disabled:opacity-50">Prev</button>
+            <button className="px-3 py-1 border border-primary rounded bg-primary text-primary-foreground">1</button>
+            <button className="px-3 py-1 border border-border rounded hover:bg-secondary">2</button>
+            <button className="px-3 py-1 border border-border rounded hover:bg-secondary">3</button>
+            <button className="px-3 py-1 border border-border rounded hover:bg-secondary">Next</button>
           </div>
         </div>
-      </Card>
+      </div>
     </div>
   );
 }
