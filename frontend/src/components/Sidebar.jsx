@@ -31,8 +31,8 @@ export default function Sidebar() {
             <Shield className="h-6 w-6" />
           </div>
           <div>
-            <p className="text-lg font-semibold text-white">VulnGuard</p>
-            <p className="text-xs uppercase tracking-[0.24em] text-slate-400">AI Security Platform</p>
+            <p className="text-lg font-semibold text-white">VulneraX</p>
+            <p className="text-[10px] uppercase tracking-widest text-slate-400">AI Security Platform</p>
           </div>
         </div>
 

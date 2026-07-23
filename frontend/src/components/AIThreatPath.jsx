@@ -25,12 +25,16 @@ export default function AIThreatPath({ insights = [], attackPath = [] }) {
             <StatusBadge label="AI Synthesized" state="ai" />
           </div>
           <div className="mt-4 space-y-3">
-            {attackPath.map((node) => (
-              <div key={node} className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-2 text-sm text-slate-300">
-                <ChevronRight className="h-4 w-4 text-violet-300" />
-                {node}
-              </div>
-            ))}
+            {attackPath.length > 0 ? (
+              attackPath.map((node) => (
+                <div key={node} className="flex items-center gap-3 rounded-xl bg-white/5 px-3 py-2 text-sm text-slate-300">
+                  <ChevronRight className="h-4 w-4 text-violet-300" />
+                  {node}
+                </div>
+              ))
+            ) : (
+              <p className="text-xs text-slate-500 text-center py-2">No attack paths generated yet.</p>
+            )}
           </div>
         </div>
       </div>

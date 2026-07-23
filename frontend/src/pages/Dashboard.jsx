@@ -62,7 +62,9 @@ export default function Dashboard() {
   const riskMeta = getRiskSummary(riskScore);
   const liveSteps = getLiveSteps(currentPhase, scanStatus);
   const insights = getAiInsights(scanResult);
-  const attackPath = ['Internet-facing service', 'Web application weakness', 'Privilege escalation opportunity', 'Sensitive data exposure'];
+  const attackPath = scanResult?.vulnerabilities?.length > 0 
+    ? ['Internet-facing service', 'Web application weakness', 'Privilege escalation opportunity', 'Sensitive data exposure']
+    : [];
 
   return (
     <div className="space-y-8">

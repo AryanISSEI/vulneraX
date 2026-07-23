@@ -9,11 +9,10 @@ export default function PlatformPlaceholder({ eyebrow, title, description }) {
       <SectionHeader eyebrow={eyebrow} title={title} description={description} />
       <div className="mt-8 rounded-2xl border border-white/10 bg-slate-950/50 p-6">
         <p className="text-sm text-slate-300">
-          This section is scaffolded so the platform shell feels complete while the dashboard remains the primary
-          production-ready view.
+          This feature is under active development and will be available in a future release.
         </p>
         <div className="mt-6 inline-flex items-center gap-2 text-sm text-cyan-300">
-          Planned next
+          Coming Soon
           <ArrowUpRight className="h-4 w-4" />
         </div>
       </div>
