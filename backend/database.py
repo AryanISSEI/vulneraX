@@ -1,82 +1,118 @@
-import aiosqlite
 import os
-import json
+from sqlalchemy.ext.asyncio import create_async_engine, async_sessionmaker, AsyncSession
+from sqlalchemy.orm import declarative_base
+from sqlalchemy import Column, Integer, String, Text, ForeignKey, DateTime
+import datetime
+from sqlalchemy.orm import relationship
 
-DB_DIR = os.path.join(os.path.dirname(os.path.dirname(__file__)), "scans")
-DB_PATH = os.path.join(DB_DIR, "VulneraX.db")
+DATABASE_URL = os.getenv("DATABASE_URL", "sqlite+aiosqlite:///../scans/VulneraX.db")
 
+engine = create_async_engine(DATABASE_URL, echo=False)
+async_session = async_sessionmaker(engine, class_=AsyncSession, expire_on_commit=False)
+
+Base = declarative_base()
+
+class User(Base):
+    __tablename__ = "users"
+    id = Column(Integer, primary_key=True, index=True)
+    username = Column(String(50), unique=True, index=True, nullable=False)
+    hashed_password = Column(String(128), nullable=False)
+    created_at = Column(DateTime, default=datetime.datetime.utcnow)
+
+    scans = relationship("Scan", back_populates="user", cascade="all, delete-orphan")
+
+class Scan(Base):
+    __tablename__ = "scans"
+    id = Column(String(36), primary_key=True, index=True)
+    user_id = Column(Integer, ForeignKey("users.id"), nullable=True)
+    target = Column(String, nullable=False)
+    timestamp = Column(String, nullable=False)
+    status = Column(String, default="pending")
+    current_phase = Column(String, default="")
+    results_json = Column(Text, default="{}")
+    risk_score = Column(Integer, default=100)
+
+    user = relationship("User", back_populates="scans")
 
 async def init_db():
-    """Initialize the database and create tables if they don't exist."""
-    os.makedirs(DB_DIR, exist_ok=True)
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            CREATE TABLE IF NOT EXISTS scans (
-                id TEXT PRIMARY KEY,
-                target TEXT NOT NULL,
-                timestamp TEXT NOT NULL,
-                status TEXT NOT NULL DEFAULT 'pending',
-                current_phase TEXT DEFAULT '',
-                results_json TEXT DEFAULT '{}',
-                risk_score INTEGER DEFAULT 100
-            )
-        """)
-        await db.commit()
-
+    if "sqlite" in DATABASE_URL:
+        os.makedirs(os.path.join(os.path.dirname(os.path.dirname(__file__)), "scans"), exist_ok=True)
+    
+    async with engine.begin() as conn:
+        await conn.run_sync(Base.metadata.create_all)
 
 async def save_scan(scan_id: str, target: str, timestamp: str, status: str = "pending",
-                     current_phase: str = "", results_json: str = "{}", risk_score: int = 100):
-    """Insert or update a scan record."""
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute("""
-            INSERT INTO scans (id, target, timestamp, status, current_phase, results_json, risk_score)
-            VALUES (?, ?, ?, ?, ?, ?, ?)
-            ON CONFLICT(id) DO UPDATE SET
-                status = excluded.status,
-                current_phase = excluded.current_phase,
-                results_json = excluded.results_json,
-                risk_score = excluded.risk_score
-        """, (scan_id, target, timestamp, status, current_phase, results_json, risk_score))
-        await db.commit()
-
+                     current_phase: str = "", results_json: str = "{}", risk_score: int = 100, user_id: int = None):
+    async with async_session() as session:
+        scan = await session.get(Scan, scan_id)
+        if not scan:
+            scan = Scan(
+                id=scan_id,
+                target=target,
+                timestamp=timestamp,
+                status=status,
+                current_phase=current_phase,
+                results_json=results_json,
+                risk_score=risk_score,
+                user_id=user_id
+            )
+            session.add(scan)
+        else:
+            scan.status = status
+            scan.current_phase = current_phase
+            scan.results_json = results_json
+            scan.risk_score = risk_score
+        await session.commit()
 
 async def get_scan(scan_id: str) -> dict | None:
-    """Retrieve a single scan by ID."""
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute("SELECT * FROM scans WHERE id = ?", (scan_id,)) as cursor:
-            row = await cursor.fetchone()
-            if row:
-                return dict(row)
+    from sqlalchemy import select
+    async with async_session() as session:
+        result = await session.execute(select(Scan).where(Scan.id == scan_id))
+        scan = result.scalars().first()
+        if scan:
+            return {
+                "id": scan.id,
+                "target": scan.target,
+                "timestamp": scan.timestamp,
+                "status": scan.status,
+                "current_phase": scan.current_phase,
+                "results_json": scan.results_json,
+                "risk_score": scan.risk_score,
+                "user_id": scan.user_id
+            }
     return None
 
-
-async def get_all_scans() -> list[dict]:
-    """Retrieve all scans ordered by timestamp descending."""
-    async with aiosqlite.connect(DB_PATH) as db:
-        db.row_factory = aiosqlite.Row
-        async with db.execute(
-            "SELECT id, target, timestamp, status, risk_score FROM scans ORDER BY timestamp DESC"
-        ) as cursor:
-            rows = await cursor.fetchall()
-            return [dict(row) for row in rows]
-
+async def get_all_scans(user_id: int = None) -> list[dict]:
+    from sqlalchemy import select
+    async with async_session() as session:
+        stmt = select(Scan).order_by(Scan.timestamp.desc())
+        if user_id is not None:
+            stmt = stmt.where(Scan.user_id == user_id)
+            
+        result = await session.execute(stmt)
+        scans = result.scalars().all()
+        return [
+            {
+                "id": s.id,
+                "target": s.target,
+                "timestamp": s.timestamp,
+                "status": s.status,
+                "risk_score": s.risk_score,
+                "user_id": s.user_id
+            }
+            for s in scans
+        ]
 
 async def update_scan_status(scan_id: str, status: str, current_phase: str = ""):
-    """Update the status and current phase of a scan."""
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "UPDATE scans SET status = ?, current_phase = ? WHERE id = ?",
-            (status, current_phase, scan_id)
-        )
-        await db.commit()
-
+    from sqlalchemy import update
+    async with async_session() as session:
+        stmt = update(Scan).where(Scan.id == scan_id).values(status=status, current_phase=current_phase)
+        await session.execute(stmt)
+        await session.commit()
 
 async def update_scan_results(scan_id: str, results_json: str, risk_score: int, status: str = "completed"):
-    """Update scan results and risk score."""
-    async with aiosqlite.connect(DB_PATH) as db:
-        await db.execute(
-            "UPDATE scans SET results_json = ?, risk_score = ?, status = ? WHERE id = ?",
-            (results_json, risk_score, status, scan_id)
-        )
-        await db.commit()
+    from sqlalchemy import update
+    async with async_session() as session:
+        stmt = update(Scan).where(Scan.id == scan_id).values(results_json=results_json, risk_score=risk_score, status=status)
+        await session.execute(stmt)
+        await session.commit()

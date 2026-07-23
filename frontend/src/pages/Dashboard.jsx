@@ -12,6 +12,10 @@ import RiskGauge from '../components/RiskGauge';
 import ReportDownload from '../components/ReportDownload';
 import { startScan, getScanStatus, getScanResults } from '../api/client';
 import { Activity, Network, Globe, Lock } from 'lucide-react';
+import gsap from 'gsap';
+import { useGSAP } from '@gsap/react';
+
+gsap.registerPlugin(useGSAP);
 
 export default function Dashboard() {
   const [isScanning, setIsScanning] = useState(false);
@@ -22,6 +26,17 @@ export default function Dashboard() {
   const [error, setError] = useState('');
   const [activeTab, setActiveTab] = useState('overview');
   const pollRef = useRef(null);
+  const containerRef = useRef(null);
+
+  // GSAP Animations
+  useGSAP(() => {
+    if (scanResult) {
+      gsap.fromTo('.gsap-stagger-item', 
+        { opacity: 0, y: 30, rotationX: 10 }, 
+        { opacity: 1, y: 0, rotationX: 0, duration: 0.8, stagger: 0.15, ease: 'power3.out', clearProps: 'all' }
+      );
+    }
+  }, { dependencies: [scanResult, activeTab], scope: containerRef });
 
   // Cleanup polling on unmount
   useEffect(() => {
@@ -82,88 +97,109 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="mx-auto max-w-7xl px-4 sm:px-6 lg:px-8 py-10">
-      
-      {/* Search Header area */}
-      <div className={`transition-all duration-500 ease-in-out ${scanResult || isScanning ? 'mb-8' : 'mt-20 mb-10'}`}>
-        <ScanForm onScan={handleScan} isScanning={isScanning} />
-      </div>
-
-      {/* Error */}
-      {error && (
-        <div className="glass-panel p-6 text-sm text-severity-critical bg-severity-critical/10 border-severity-critical/30 mb-8 animate-fade-in flex items-center gap-2 font-mono">
-          <span className="animate-pulse">▶</span> {error}
-        </div>
-      )}
-
-      {/* Scan Progress */}
-      {isScanning && (
-        <div className="mb-8">
-          <ScanProgress status={scanStatus} currentPhase={currentPhase} />
-        </div>
-      )}
-
-      {/* Results Tabbed Interface */}
-      {scanResult && (
-        <div className="animate-slide-up">
-          {/* Tab Navigation */}
-          <div className="flex border-b border-border-default mb-8 space-x-1 overflow-x-auto">
-            {tabs.map(tab => (
-              <button
-                key={tab.id}
-                onClick={() => setActiveTab(tab.id)}
-                className={`flex items-center gap-2 px-6 py-3 text-sm font-medium border-b-2 transition-all whitespace-nowrap ${
-                  activeTab === tab.id 
-                    ? 'border-accent-primary text-accent-primary bg-accent-primary/5' 
-                    : 'border-transparent text-text-secondary hover:text-text-primary hover:bg-bg-card/50'
-                }`}
-              >
-                <tab.icon className="h-4 w-4" />
-                {tab.label}
-              </button>
-            ))}
-            
-            <div className="ml-auto flex items-center py-2 pr-2">
-              <ReportDownload scanId={scanResult.scan_id} />
+    <div className="w-full h-full p-8 flex flex-col space-y-6">
+          {/* Header */}
+          <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
+            <div>
+              <h1 className="text-3xl font-bold tracking-tight">Vulnerability Scanner</h1>
+              <p className="mt-1 text-muted-foreground">AI-powered web application security assessment</p>
             </div>
+            {scanResult && <ReportDownload scanId={scanResult.scan_id} />}
           </div>
+
+          {/* Error Message */}
+          {error && (
+            <div className="p-4 rounded-xl bg-destructive/10 border border-destructive/20 text-destructive text-sm font-medium">
+              {error}
+            </div>
+          )}
+
+          {/* Scanner Input */}
+          <div className="shrink-0">
+            <ScanForm onScan={handleScan} isScanning={isScanning} />
+          </div>
+
+          {/* Scan Progress */}
+          {isScanning && (
+            <div className="shrink-0">
+              <ScanProgress status={scanStatus} currentPhase={currentPhase} />
+            </div>
+          )}
+
+          {/* Navigation Tabs */}
+          {scanResult && (
+            <div className="border-b border-border shrink-0">
+              <nav className="-mb-px flex space-x-8">
+                {[
+                  { id: 'overview', label: 'Overview', icon: Activity },
+                  { id: 'network', label: 'Network & Ports', icon: Network },
+                  { id: 'web', label: 'Web Headers', icon: Globe },
+                  { id: 'crypto', label: 'SSL/TLS', icon: Lock },
+                ].map(({ id, label, icon: Icon }) => (
+                  <button
+                    key={id}
+                    onClick={() => setActiveTab(id)}
+                    className={`
+                      group inline-flex items-center gap-2 py-4 px-1 border-b-2 font-medium text-sm
+                      transition-colors duration-200
+                      ${activeTab === id
+                        ? 'border-primary text-primary'
+                        : 'border-transparent text-muted-foreground hover:text-foreground hover:border-border'
+                      }
+                    `}
+                  >
+                    <Icon className={`h-4 w-4 ${activeTab === id ? 'text-primary' : 'text-muted-foreground group-hover:text-foreground'}`} />
+                    {label}
+                  </button>
+                ))}
+              </nav>
+            </div>
+          )}
 
           {/* Tab Content */}
-          <div className="min-h-[500px]">
-            {activeTab === 'overview' && (
-              <div className="space-y-8 animate-fade-in">
-                <QuickInfo scanResult={scanResult} />
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <RiskGauge score={scanResult.risk_score?.overall} />
-                  <RiskChart vulnerabilities={scanResult.vulnerabilities} />
+          {scanResult && (
+            <div className="flex-1 flex flex-col" ref={containerRef}>
+              {activeTab === 'overview' && (
+                <div className="space-y-8">
+                  <div className="gsap-stagger-item perspective-[1000px]">
+                    <QuickInfo scanResult={scanResult} />
+                  </div>
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 gsap-stagger-item perspective-[1000px]">
+                    <RiskGauge score={scanResult?.risk_score?.overall} />
+                    <RiskChart vulnerabilities={scanResult?.vulnerabilities || []} />
+                  </div>
+                  <div className="gsap-stagger-item perspective-[1000px]">
+                    <VulnPanel vulnerabilities={scanResult?.vulnerabilities || []} />
+                  </div>
                 </div>
-                <VulnPanel vulnerabilities={scanResult.vulnerabilities} />
-              </div>
-            )}
+              )}
 
-            {activeTab === 'network' && (
-              <div className="space-y-8 animate-fade-in">
-                <PortTable ports={scanResult.ports} />
-              </div>
-            )}
-
-            {activeTab === 'web' && (
-              <div className="space-y-8 animate-fade-in">
-                <div className="grid grid-cols-1 lg:grid-cols-2 gap-8">
-                  <HeadersPanel headers={scanResult.headers} />
-                  <CookiePanel cookies={scanResult.cookies} />
+              {activeTab === 'network' && (
+                <div className="space-y-8">
+                  <div className="gsap-stagger-item">
+                    <PortTable ports={scanResult?.ports || []} />
+                  </div>
                 </div>
-              </div>
-            )}
+              )}
 
-            {activeTab === 'crypto' && (
-              <div className="space-y-8 animate-fade-in">
-                <SSLPanel ssl={scanResult.ssl} />
-              </div>
-            )}
-          </div>
+              {activeTab === 'web' && (
+                <div className="space-y-8">
+                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 gsap-stagger-item">
+                    <HeadersPanel headers={scanResult?.headers || {}} />
+                    <CookiePanel cookies={scanResult?.cookies || []} />
+                  </div>
+                </div>
+              )}
+
+              {activeTab === 'crypto' && (
+                <div className="space-y-8">
+                  <div className="gsap-stagger-item">
+                    <SSLPanel ssl={scanResult?.ssl || {}} />
+                  </div>
+                </div>
+              )}
+            </div>
+          )}
         </div>
-      )}
-    </div>
   );
 }
