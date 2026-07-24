@@ -16,19 +16,7 @@ class Token(BaseModel):
 
 @router.post("/register", response_model=Token)
 async def register(user: UserAuth):
-    async with async_session() as session:
-        result = await session.execute(select(User).where(User.username == user.username))
-        if result.scalars().first():
-            raise HTTPException(status_code=400, detail="Username already registered")
-        
-        hashed_pw = get_password_hash(user.password)
-        new_user = User(username=user.username, hashed_password=hashed_pw)
-        session.add(new_user)
-        await session.commit()
-        await session.refresh(new_user)
-        
-        access_token = create_access_token(data={"sub": str(new_user.id)})
-        return {"access_token": access_token, "token_type": "bearer"}
+    raise HTTPException(status_code=403, detail="Registration is disabled. Administrator access only.")
 
 @router.post("/login", response_model=Token)
 async def login(user: UserAuth):

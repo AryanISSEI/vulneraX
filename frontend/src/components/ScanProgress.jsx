@@ -1,4 +1,5 @@
-import { Loader2, CheckCircle2, XCircle, Zap } from 'lucide-react';
+import React from 'react';
+import { Loader2, CheckCircle2, Zap } from 'lucide-react';
 
 const PHASES = [
   'DNS Lookup',
