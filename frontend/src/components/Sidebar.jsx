@@ -20,7 +20,7 @@ export default function Sidebar() {
     <div className="w-20 h-full border-r border-border bg-card flex flex-col items-center py-6 z-20 shrink-0">
       <div className="flex flex-col items-center gap-1 mb-8">
         <div className="h-10 w-10 flex items-center justify-center">
-          <Shield className="h-8 w-8 text-primary fill-primary" />
+          <Shield className="h-8 w-8 text-primary fill-primary animate-spin-slow" />
         </div>
         <span className="font-bold text-[10px] tracking-tight text-primary">VulneraX</span>
       </div>

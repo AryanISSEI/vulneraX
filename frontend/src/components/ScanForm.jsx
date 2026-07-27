@@ -32,7 +32,7 @@ export default function ScanForm({ onScan, isScanning }) {
           <Button 
             type="submit" 
             disabled={!target.trim() || isScanning}
-            className="h-12 px-8"
+            className={`h-12 px-8 ${!isScanning && target.trim() ? 'animate-pulse-glow' : ''}`}
           >
             {isScanning ? (
               <>

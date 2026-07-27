@@ -3,7 +3,8 @@ import { useNavigate, Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { login } from '../api/client';
 import { useAuth } from '../lib/AuthContext';
-import { Lock } from 'lucide-react';
+import { Lock, Shield } from 'lucide-react';
+import ParticleBackground from '../components/ParticleBackground';
 
 export default function Login() {
   const [email, setEmail] = useState('');
@@ -25,14 +26,27 @@ export default function Login() {
   };
 
   return (
-    <div className="min-h-screen w-full flex flex-col bg-background network-bg-full relative overflow-hidden">
+    <div className="min-h-screen w-full flex flex-col bg-background relative overflow-hidden">
+      <ParticleBackground />
       {/* Top Bar */}
       <div className="w-full h-24 flex items-center justify-between px-8 md:px-16 border-b border-border bg-background/80 backdrop-blur-md z-10 shrink-0">
-        <div className="text-3xl font-bold text-foreground">VulneraX</div>
+        <div className="text-3xl font-bold text-foreground flex items-center gap-2">
+          <Shield className="h-8 w-8 text-primary animate-spin-slow" />
+          VulneraX
+        </div>
         <div className="text-sm text-muted-foreground font-medium">
           Don't have an account? <Link to="/register" className="text-primary hover:underline ml-1">Sign up now!</Link>
         </div>
       </div>
+
+      {/* Decorative Floating Background Element */}
+      <motion.div 
+        animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }} 
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute right-10 top-1/4 opacity-5 pointer-events-none z-0 hidden md:block"
+      >
+        <Shield className="w-96 h-96 text-primary" />
+      </motion.div>
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-start px-8 md:px-32 z-10">
