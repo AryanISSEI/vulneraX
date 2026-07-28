@@ -97,7 +97,7 @@ export default function Dashboard() {
   ];
 
   return (
-    <div className="w-full h-full p-8 flex flex-col space-y-6">
+    <div className="w-full h-full p-8 flex flex-col space-y-6 glass-panel rounded-2xl border border-white/10 relative overflow-hidden">
           {/* Header */}
           <div className="flex flex-col md:flex-row justify-between items-start md:items-center gap-4 shrink-0">
             <div>

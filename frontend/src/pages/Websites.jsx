@@ -22,7 +22,7 @@ export default function Websites() {
   };
 
   return (
-    <div className="w-full h-full p-8 md:p-12 flex flex-col space-y-8 max-w-7xl mx-auto">
+    <div className="w-full h-full p-8 md:p-12 flex flex-col space-y-8 glass-panel rounded-2xl border border-white/10 relative overflow-hidden">
       <div className="flex justify-between items-start shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Websites Interfaces</h1>
