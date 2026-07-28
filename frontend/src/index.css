@@ -35,26 +35,32 @@
   }
 
   .dark {
-    /* Dark Theme */
-    --background: #000000;
+    /* Kinetic Particle Grid Theme (Deep Abyss) */
+    --background: #050510; /* Deep abyss with violet undertones */
     --foreground: #f8fafc;
-    --card: #0a0a0a;
+    --card: #080816;
     --card-foreground: #f8fafc;
-    --popover: #0a0a0a;
+    --popover: #080816;
     --popover-foreground: #f8fafc;
-    --primary: #3b82f6;
-    --primary-foreground: #ffffff;
-    --secondary: #1a1a1a;
+    --primary: #00f0ff; /* Electric Cyan */
+    --primary-foreground: #000000;
+    --secondary: #0a0a20;
     --secondary-foreground: #f8fafc;
-    --muted: #1a1a1a;
+    --muted: #0a0a20;
     --muted-foreground: #94a3b8;
-    --accent: #1a1a1a;
-    --accent-foreground: #f8fafc;
-    --destructive: #f43f5e;
+    --accent: #00f0ff;
+    --accent-foreground: #000000;
+    --destructive: #ff003c; /* Neon Crimson */
     --destructive-foreground: #ffffff;
-    --border: #222222;
-    --input: #1a1a1a;
-    --ring: #3b82f6;
+    --border: #1a1a3a;
+    --input: #0a0a20;
+    --ring: #00f0ff;
+    
+    /* Custom Risk Tier Colors */
+    --risk-critical: #ff003c;
+    --risk-high: #ff7e00;
+    --risk-medium: #facc15;
+    --risk-low: #39ff14;
   }
 }
 

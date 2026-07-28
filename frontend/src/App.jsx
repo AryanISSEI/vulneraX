@@ -34,7 +34,7 @@ function MainLayout() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="w-full h-full flex flex-col max-w-7xl mx-auto pt-6 pb-12"
+              className="w-full h-full flex flex-col max-w-7xl mx-auto pt-28 pb-12"
             >
               <Routes location={location}>
                 <Route path="/" element={<Dashboard />} />

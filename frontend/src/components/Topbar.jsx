@@ -1,98 +1,115 @@
 import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Database, Globe, Shield, User, LogOut, Settings } from 'lucide-react';
+import { Home, Database, Globe, Shield, User, LogOut, Settings, Activity } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../lib/AuthContext';
+import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
+import gsap from 'gsap';
 
 export default function Topbar() {
   const location = useLocation();
   const { user, logout } = useAuth();
-  const [profileOpen, setProfileOpen] = useState(false);
-  const profileRef = useRef(null);
+  
+  const logoRef = useRef(null);
+
+  // GSAP Breathing glow on the X
+  useEffect(() => {
+    if (logoRef.current) {
+      gsap.to(logoRef.current, {
+        textShadow: "0px 0px 15px rgba(0,240,255,0.8), 0px 0px 30px rgba(0,240,255,0.6)",
+        duration: 2,
+        yoyo: true,
+        repeat: -1,
+        ease: "sine.inOut"
+      });
+    }
+  }, []);
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/' },
-    { id: 'websites', label: 'Websites', icon: Globe, path: '/websites' },
-    { id: 'history', label: 'History', icon: Database, path: '/history' },
+    { id: 'websites', label: 'Active Scans', icon: Globe, path: '/websites' },
+    { id: 'history', label: 'AI Reports', icon: Database, path: '/history' },
   ];
 
-  useEffect(() => {
-    function handleClickOutside(event) {
-      if (profileRef.current && !profileRef.current.contains(event.target)) setProfileOpen(false);
-    }
-    document.addEventListener("mousedown", handleClickOutside);
-    return () => document.removeEventListener("mousedown", handleClickOutside);
-  }, []);
-
   return (
-    <header className="h-20 glass-nav flex items-center justify-between px-8 z-50 shrink-0 sticky top-0 w-full">
-      {/* Logo */}
-      <div className="flex items-center gap-3">
-        <div className="h-12 w-12 flex items-center justify-center bg-primary/10 rounded-xl border border-primary/20">
-          <Shield className="h-8 w-8 text-primary fill-primary/20 animate-spin-slow" />
+    <div className="fixed top-5 left-0 right-0 z-50 flex justify-center w-full px-4 pointer-events-none">
+      <header className="h-16 w-full max-w-4xl glass-nav rounded-full flex items-center justify-between px-6 shadow-[0_0_30px_rgba(0,0,0,0.8)] pointer-events-auto border border-white/10 bg-black/40 backdrop-blur-xl">
+        {/* Brand */}
+        <div className="flex items-center gap-3">
+          <Shield className="h-6 w-6 text-primary animate-pulse-glow" />
+          <span className="font-extrabold text-xl tracking-tight text-white flex">
+            Vulnera<span ref={logoRef} className="text-primary ml-[1px]">X</span>
+          </span>
         </div>
-        <span className="font-extrabold text-2xl tracking-tighter bg-clip-text text-transparent bg-gradient-to-r from-white to-primary">
-          VulneraX
-        </span>
-      </div>
 
-      {/* Navigation */}
-      <nav className="hidden md:flex items-center gap-2">
-        {menuItems.map((item) => {
-          const isActive = location.pathname === item.path;
-          return (
-            <NavLink
-              key={item.id}
-              to={item.path}
-              className={`relative px-4 py-2 flex items-center gap-2 text-sm font-semibold transition-all duration-300 rounded-full ${
-                isActive ? 'text-white' : 'text-muted-foreground hover:text-white hover:bg-white/5'
-              }`}
-            >
-              <item.icon className={`h-4 w-4 ${isActive ? 'text-primary' : ''}`} />
-              {item.label}
-              {isActive && (
-                <motion.div
-                  layoutId="topbar-active-indicator"
-                  className="absolute inset-0 border border-primary/50 bg-primary/10 rounded-full -z-10"
-                  transition={{ type: "spring", stiffness: 400, damping: 30 }}
-                />
-              )}
-            </NavLink>
-          );
-        })}
-      </nav>
+        {/* Navigation */}
+        <nav className="hidden md:flex items-center gap-1 relative">
+          {menuItems.map((item) => {
+            const isActive = location.pathname === item.path;
+            return (
+              <NavLink
+                key={item.id}
+                to={item.path}
+                className={`relative px-5 py-2 flex items-center gap-2 text-sm font-medium transition-colors rounded-full group ${
+                  isActive ? 'text-white' : 'text-muted-foreground hover:text-white'
+                }`}
+              >
+                <item.icon className={`h-4 w-4 ${isActive ? 'text-primary' : 'group-hover:text-primary transition-colors'}`} />
+                {item.label}
+                {isActive && (
+                  <motion.div
+                    layoutId="topbar-active-indicator"
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(0,240,255,0.8)]"
+                    transition={{ type: "spring", stiffness: 400, damping: 30 }}
+                  />
+                )}
+              </NavLink>
+            );
+          })}
+        </nav>
 
-      {/* Profile */}
-      <div className="flex items-center gap-4">
-        <div className="relative" ref={profileRef}>
-          <button 
-            className="flex items-center justify-center h-12 w-12 rounded-full border-2 border-border overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none bg-black/50"
-            onClick={() => setProfileOpen(!profileOpen)}
-          >
-            <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=Admin`} alt="User" className="h-full w-full object-cover" />
-          </button>
-          
-          {profileOpen && (
-            <div className="absolute right-0 mt-3 w-56 rounded-xl border border-border glass-panel shadow-2xl overflow-hidden z-50 animate-in fade-in slide-in-from-top-2 duration-200">
-              <div className="px-4 py-4 border-b border-border bg-black/40">
-                <p className="text-sm font-bold text-white">{user?.username || 'Administrator'}</p>
-                <p className="text-xs text-primary mt-1 font-mono flex items-center gap-1">
-                  <div className="h-2 w-2 rounded-full bg-green-500 animate-pulse" />
-                  System Active
-                </p>
-              </div>
-              <div className="flex flex-col p-2">
-                <button className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-white/10 text-white transition-colors">
+        {/* Status & Profile */}
+        <div className="flex items-center gap-4">
+          <div className="hidden sm:flex items-center gap-2 px-3 py-1.5 rounded-full bg-black/40 border border-white/5">
+            <Activity className="h-4 w-4 text-risk-medium animate-pulse" />
+            <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Threat</span>
+            <span className="text-[10px] font-bold text-risk-medium font-mono uppercase tracking-widest">MODERATE</span>
+          </div>
+
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button className="flex items-center justify-center h-10 w-10 rounded-full border border-white/10 overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none bg-black/50">
+                <img src={`https://api.dicebear.com/7.x/avataaars/svg?seed=Admin`} alt="User" className="h-full w-full object-cover" />
+              </button>
+            </DropdownMenu.Trigger>
+
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content 
+                className="min-w-[220px] rounded-xl border border-white/10 bg-card/90 backdrop-blur-xl p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 z-[60]"
+                sideOffset={8}
+                align="end"
+              >
+                <div className="px-3 py-2 mb-2 border-b border-white/5">
+                  <p className="text-sm font-bold text-white">{user?.username || 'Administrator'}</p>
+                  <p className="text-xs text-primary font-mono flex items-center gap-1.5 mt-1">
+                    <span className="h-1.5 w-1.5 rounded-full bg-primary animate-pulse" />
+                    System Active
+                  </p>
+                </div>
+                <DropdownMenu.Item className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-white/10 text-white cursor-pointer outline-none">
                   <Settings className="h-4 w-4 text-muted-foreground" /> Settings
-                </button>
-                <button onClick={logout} className="flex items-center gap-3 px-3 py-2.5 text-sm rounded-lg hover:bg-destructive/20 hover:text-destructive text-white font-medium mt-1 transition-colors">
-                  <LogOut className="h-4 w-4 text-destructive" /> Disconnect
-                </button>
-              </div>
-            </div>
-          )}
+                </DropdownMenu.Item>
+                <DropdownMenu.Item 
+                  onClick={logout}
+                  className="flex items-center gap-3 px-3 py-2 text-sm rounded-lg hover:bg-destructive/20 text-white hover:text-destructive cursor-pointer outline-none mt-1"
+                >
+                  <LogOut className="h-4 w-4" /> Disconnect
+                </DropdownMenu.Item>
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
         </div>
-      </div>
-    </header>
+      </header>
+    </div>
   );
 }
