@@ -10,10 +10,7 @@ import gsap from 'gsap';
 export default function Topbar() {
   const location = useLocation();
   const { user, logout } = useAuth();
-<<<<<<< HEAD
-=======
   const { theme, setTheme } = useTheme();
->>>>>>> 765d447d66be115f3d5cfc85981cc06dd16337c1
   
   const logoRef = useRef(null);
 
