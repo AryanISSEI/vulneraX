@@ -109,8 +109,8 @@ const ParticleBackground = () => {
         const y = (Math.random() * ((canvas.height - size * 2) - (size * 2)) + size * 2);
         const directionX = (Math.random() * 1.5) - 0.75;
         const directionY = (Math.random() * 1.5) - 0.75;
-        // Primary color that matches VulneraX theme (blue)
-        const color = 'rgba(59, 130, 246, 0.7)'; 
+        // Primary color that matches VulneraX theme (red)
+        const color = 'rgba(220, 38, 38, 0.7)'; 
 
         particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
       }
@@ -129,7 +129,7 @@ const ParticleBackground = () => {
              // Opacity is relative to distance
              opacityValue = 1 - (distance/15000);
              if (opacityValue > 0) {
-               ctx.strokeStyle = `rgba(59, 130, 246, ${opacityValue * 0.25})`; // Subtle blue line
+               ctx.strokeStyle = `rgba(220, 38, 38, ${opacityValue * 0.25})`; // Subtle red line
                ctx.lineWidth = 1;
                ctx.beginPath();
                ctx.moveTo(particlesArray[a].x, particlesArray[a].y);

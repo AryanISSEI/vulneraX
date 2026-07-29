@@ -18,7 +18,7 @@ export default function Topbar() {
   useEffect(() => {
     if (logoRef.current) {
       gsap.to(logoRef.current, {
-        textShadow: "0px 0px 15px rgba(0,240,255,0.8), 0px 0px 30px rgba(0,240,255,0.6)",
+        textShadow: "0px 0px 15px rgba(220,38,38,0.8), 0px 0px 30px rgba(220,38,38,0.6)",
         duration: 2,
         yoyo: true,
         repeat: -1,
@@ -63,7 +63,7 @@ export default function Topbar() {
                 {isActive && (
                   <motion.div
                     layoutId="topbar-active-indicator"
-                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(0,240,255,0.8)]"
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(220,38,38,0.8)]"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}

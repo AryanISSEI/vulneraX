@@ -38,7 +38,7 @@ export default function ScanForm({ onScan, isScanning }) {
     
     for (let i = 0; i < numParticles; i++) {
       const particle = document.createElement('div');
-      particle.className = 'absolute bg-primary rounded-full shadow-[0_0_10px_#00f0ff] z-50';
+      particle.className = 'absolute bg-primary rounded-full shadow-[0_0_10px_#dc2626] z-50';
       
       // Random size
       const size = Math.random() * 6 + 2;
