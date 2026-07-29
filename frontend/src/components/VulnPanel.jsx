@@ -28,7 +28,7 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
             onClick={() => setActiveTab(tab)}
             className={`rounded-full px-4 py-2 text-sm transition-all duration-300 font-mono uppercase tracking-widest text-[10px] ${
               activeTab === tab
-                ? 'bg-primary text-black shadow-[0_0_15px_rgba(0,240,255,0.4)]'
+                ? 'bg-primary text-black shadow-[0_0_15px_rgba(220,38,38,0.4)]'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10'
             }`}
           >
@@ -71,7 +71,7 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
                   <td className="py-4 px-2">
                     <button 
                       onClick={() => onSelectVuln?.(item)}
-                      className="rounded-lg bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary px-3 py-1.5 text-[10px] font-bold tracking-widest text-primary hover:text-black transition-all shadow-[0_0_10px_rgba(0,240,255,0)] hover:shadow-[0_0_15px_rgba(0,240,255,0.5)] font-mono uppercase"
+                      className="rounded-lg bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary px-3 py-1.5 text-[10px] font-bold tracking-widest text-primary hover:text-black transition-all shadow-[0_0_10px_rgba(220,38,38,0)] hover:shadow-[0_0_15px_rgba(220,38,38,0.5)] font-mono uppercase"
                     >
                       Oracle
                     </button>

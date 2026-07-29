@@ -21,8 +21,8 @@ export default function RiskChart({ vulnerabilities }) {
       {
         label: 'Vulnerability Density',
         data: [counts.critical, counts.high, counts.medium, counts.low, counts.info],
-        backgroundColor: 'rgba(0, 240, 255, 0.2)', // Electric Cyan transparent
-        borderColor: 'rgba(0, 240, 255, 1)',
+        backgroundColor: 'rgba(220, 38, 38, 0.2)', // Red transparent
+        borderColor: 'rgba(220, 38, 38, 1)',
         pointBackgroundColor: [
           '#ff003c', // Critical
           '#ff7e00', // High
@@ -32,7 +32,7 @@ export default function RiskChart({ vulnerabilities }) {
         ],
         pointBorderColor: 'rgba(255,255,255,0.8)',
         pointHoverBackgroundColor: '#fff',
-        pointHoverBorderColor: 'rgba(0, 240, 255, 1)',
+        pointHoverBorderColor: 'rgba(220, 38, 38, 1)',
         borderWidth: 2,
         pointRadius: 5,
         pointHoverRadius: 8,
@@ -70,7 +70,7 @@ export default function RiskChart({ vulnerabilities }) {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
         titleColor: '#00f0ff',
         bodyColor: '#f8fafc',
-        borderColor: 'rgba(0, 240, 255, 0.3)',
+        borderColor: 'rgba(220, 38, 38, 0.3)',
         borderWidth: 1,
         padding: 12,
         cornerRadius: 4,
