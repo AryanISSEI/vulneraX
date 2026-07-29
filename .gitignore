@@ -1,10 +1,13 @@
 scans/
 reports/
-backend/__pycache__/
 backend/.venv/
 backend/venv/
+backend/python-bin/
+**/__pycache__/
 backend/.env
 frontend/node_modules/
 frontend/dist/
 frontend/.env
 .DS_Store
+project_contents.md
+CyberScope – UI_UX Design for Web Vulnerability Analysis Platform (Community)

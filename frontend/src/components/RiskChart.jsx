@@ -1,12 +1,12 @@
 import React from 'react';
-import { Chart as ChartJS, ArcElement, Tooltip, Legend } from 'chart.js';
-import { Doughnut } from 'react-chartjs-2';
+import { Chart as ChartJS, RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend } from 'chart.js';
+import { Radar } from 'react-chartjs-2';
 import { countBySeverity } from '../utils/helpers';
-import { PieChart } from 'lucide-react';
+import { Activity } from 'lucide-react';
 import GlassCard from './ui/GlassCard';
 import SectionHeader from './ui/SectionHeader';
 
-ChartJS.register(ArcElement, Tooltip, Legend);
+ChartJS.register(RadialLinearScale, PointElement, LineElement, Filler, Tooltip, Legend);
 
 export default function RiskChart({ vulnerabilities }) {
   const counts = countBySeverity(vulnerabilities);
@@ -14,28 +14,28 @@ export default function RiskChart({ vulnerabilities }) {
 
   if (total === 0) return null;
 
+  // Radar chart data using Deep Abyss theme
   const data = {
     labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
     datasets: [
       {
+        label: 'Vulnerability Density',
         data: [counts.critical, counts.high, counts.medium, counts.low, counts.info],
-        backgroundColor: [
-          'rgba(239, 68, 68, 0.8)',
-          'rgba(249, 115, 22, 0.8)',
-          'rgba(234, 179, 8, 0.8)',
-          'rgba(59, 130, 246, 0.8)',
-          'rgba(107, 114, 128, 0.8)',
+        backgroundColor: 'rgba(0, 240, 255, 0.2)', // Electric Cyan transparent
+        borderColor: 'rgba(0, 240, 255, 1)',
+        pointBackgroundColor: [
+          '#ff003c', // Critical
+          '#ff7e00', // High
+          '#facc15', // Medium
+          '#39ff14', // Low
+          '#6b7280', // Info
         ],
-        borderColor: [
-          'rgba(239, 68, 68, 1)',
-          'rgba(249, 115, 22, 1)',
-          'rgba(234, 179, 8, 1)',
-          'rgba(59, 130, 246, 1)',
-          'rgba(107, 114, 128, 1)',
-        ],
+        pointBorderColor: 'rgba(255,255,255,0.8)',
+        pointHoverBackgroundColor: '#fff',
+        pointHoverBorderColor: 'rgba(0, 240, 255, 1)',
         borderWidth: 2,
-        hoverBorderWidth: 3,
-        hoverOffset: 8,
+        pointRadius: 5,
+        pointHoverRadius: 8,
       },
     ],
   };
@@ -43,51 +43,57 @@ export default function RiskChart({ vulnerabilities }) {
   const options = {
     responsive: true,
     maintainAspectRatio: false,
-    cutout: '65%',
+    scales: {
+      r: {
+        angleLines: {
+          color: 'rgba(255, 255, 255, 0.1)'
+        },
+        grid: {
+          color: 'rgba(255, 255, 255, 0.1)',
+          circular: true,
+        },
+        pointLabels: {
+          color: '#00f0ff',
+          font: { family: 'monospace', size: 11, weight: 'bold' }
+        },
+        ticks: {
+          display: false,
+          min: 0,
+        }
+      }
+    },
     plugins: {
       legend: {
-        position: 'bottom',
-        labels: {
-          color: '#94a3b8',
-          padding: 16,
-          usePointStyle: true,
-          pointStyle: 'circle',
-          font: { size: 11, family: 'Inter' },
-        },
+        display: false,
       },
       tooltip: {
-        backgroundColor: '#1a2035',
-        titleColor: '#e2e8f0',
-        bodyColor: '#94a3b8',
-        borderColor: 'rgba(99, 102, 241, 0.3)',
+        backgroundColor: 'rgba(0, 0, 0, 0.8)',
+        titleColor: '#00f0ff',
+        bodyColor: '#f8fafc',
+        borderColor: 'rgba(0, 240, 255, 0.3)',
         borderWidth: 1,
         padding: 12,
-        cornerRadius: 8,
-        titleFont: { weight: '600' },
+        cornerRadius: 4,
+        displayColors: false,
+        titleFont: { family: 'monospace' },
+        bodyFont: { family: 'monospace' },
       },
     },
   };
 
   return (
-    <GlassCard animateFloat glowColor="violet" delay={0.5}>
+    <GlassCard animateFloat glowColor="cyan" delay={0.5}>
       <SectionHeader 
-        title="Finding Distribution" 
-        subtitle={`${total} total finding${total !== 1 ? 's' : ''}`} 
-        icon={PieChart} 
-        color="violet" 
+        title="Vulnerability Spectrum" 
+        subtitle="Radar threat analysis" 
+        icon={Activity} 
+        color="cyan" 
       />
 
-      <div className="relative h-[220px] z-10">
-        <div className="absolute inset-0 bg-black/20 rounded-full blur-xl -z-10 transform scale-75"></div>
-        <Doughnut data={data} options={options} />
-        {/* Center label */}
-        <div className="absolute inset-0 flex items-center justify-center pointer-events-none" style={{ marginBottom: '40px' }}>
-          <div className="text-center">
-            <span className="text-3xl font-mono text-white glow-text-cyan">{total}</span>
-            <br />
-            <span className="text-[10px] font-mono text-text-muted uppercase tracking-wider">Findings</span>
-          </div>
-        </div>
+      <div className="relative h-[250px] z-10 mt-4">
+        {/* Glow behind radar */}
+        <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl -z-10 transform scale-75"></div>
+        <Radar data={data} options={options} />
       </div>
     </GlassCard>
   );

@@ -22,13 +22,13 @@ export default function Websites() {
   };
 
   return (
-    <div className="w-full h-full p-8 md:p-12 flex flex-col space-y-8 max-w-7xl mx-auto">
+    <div className="w-full h-full p-8 md:p-12 flex flex-col space-y-8 glass-panel rounded-2xl border border-white/10 relative overflow-hidden">
       <div className="flex justify-between items-start shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight text-foreground">Websites Interfaces</h1>
           <p className="text-muted-foreground mt-1">Welcome back, user</p>
         </div>
-        <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium transition-colors shadow-sm">
+        <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium transition-all shadow-sm hover:scale-105 animate-pulse-glow">
           <Plus className="h-5 w-5" />
           Add Website
         </button>

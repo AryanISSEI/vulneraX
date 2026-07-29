@@ -1,8 +1,8 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { register } from '../api/client';
-import { Lock } from 'lucide-react';
+import { Lock, Shield } from 'lucide-react';
 
 export default function Register() {
   const [firstName, setFirstName] = useState('');
@@ -11,7 +11,6 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -28,11 +27,23 @@ export default function Register() {
     <div className="min-h-screen w-full flex flex-col bg-background network-bg-full relative overflow-hidden">
       {/* Top Bar */}
       <div className="w-full h-24 flex items-center justify-between px-8 md:px-16 border-b border-border bg-background/80 backdrop-blur-md z-10 shrink-0">
-        <div className="text-3xl font-bold text-foreground">VulneraX</div>
+        <div className="text-3xl font-bold text-foreground flex items-center gap-2">
+          <Shield className="h-8 w-8 text-primary animate-spin-slow" />
+          VulneraX
+        </div>
         <div className="text-sm text-muted-foreground font-medium">
           Already have an account? <Link to="/login" className="text-primary hover:underline ml-1">Sign in now!</Link>
         </div>
       </div>
+
+      {/* Decorative Floating Background Element */}
+      <motion.div 
+        animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }} 
+        transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
+        className="absolute left-10 top-1/4 opacity-5 pointer-events-none z-0 hidden md:block"
+      >
+        <Shield className="w-96 h-96 text-primary" />
+      </motion.div>
 
       {/* Main Content */}
       <div className="flex-1 flex items-center justify-start px-8 md:px-32 z-10">
@@ -63,8 +74,8 @@ export default function Register() {
               className="w-full p-4 rounded bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all border-none"
             />
             <input 
-              type="email" 
-              placeholder="Email"
+              type="text" 
+              placeholder="Username or Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-4 rounded bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all border-none"

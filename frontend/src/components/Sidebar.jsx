@@ -1,12 +1,9 @@
-import { useState } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
 import { Home, Database, Globe, Contact, Users, Shield } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { useAuth } from '../lib/AuthContext';
 
 export default function Sidebar() {
   const location = useLocation();
-  const { user } = useAuth();
 
   const menuItems = [
     { id: 'dashboard', icon: Home, path: '/' },

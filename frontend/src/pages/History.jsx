@@ -50,7 +50,7 @@ export default function History() {
   };
 
   return (
-    <div className="w-full h-full p-8 flex flex-col space-y-6">
+    <div className="w-full h-full p-8 flex flex-col space-y-6 glass-panel rounded-2xl border border-white/10 relative overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight">Scan History</h1>
