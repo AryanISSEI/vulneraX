@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { login } from '../api/client';
 import { useAuth } from '../lib/AuthContext';
@@ -10,8 +10,6 @@ export default function Login() {
   const [email, setEmail] = useState('');
   const [password, setPassword] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
-  const { setUser } = useAuth();
 
   const handleLogin = async (e) => {
     e.preventDefault();
@@ -63,8 +61,8 @@ export default function Login() {
           
           <form onSubmit={handleLogin} className="space-y-4">
             <input 
-              type="email" 
-              placeholder="Email"
+              type="text" 
+              placeholder="Username or Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-4 rounded bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all border-none"

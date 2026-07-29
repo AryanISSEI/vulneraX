@@ -1,5 +1,5 @@
 import React, { useState } from 'react';
-import { useNavigate, Link } from 'react-router-dom';
+import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { register } from '../api/client';
 import { Lock, Shield } from 'lucide-react';
@@ -11,7 +11,6 @@ export default function Register() {
   const [password, setPassword] = useState('');
   const [phone, setPhone] = useState('');
   const [error, setError] = useState('');
-  const navigate = useNavigate();
 
   const handleRegister = async (e) => {
     e.preventDefault();
@@ -75,8 +74,8 @@ export default function Register() {
               className="w-full p-4 rounded bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all border-none"
             />
             <input 
-              type="email" 
-              placeholder="Email"
+              type="text" 
+              placeholder="Username or Email"
               value={email}
               onChange={(e) => setEmail(e.target.value)}
               className="w-full p-4 rounded bg-input text-foreground placeholder-muted-foreground focus:outline-none focus:ring-2 focus:ring-primary transition-all border-none"

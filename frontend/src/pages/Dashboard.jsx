@@ -20,7 +20,7 @@ gsap.registerPlugin(useGSAP);
 
 export default function Dashboard() {
   const [isScanning, setIsScanning] = useState(false);
-  const [scanId, setScanId] = useState(null);
+  const [_scanId, setScanId] = useState(null);
   const [scanStatus, setScanStatus] = useState(null);
   const [currentPhase, setCurrentPhase] = useState('');
   const [scanResult, setScanResult] = useState(null);
@@ -91,12 +91,7 @@ export default function Dashboard() {
     }
   };
 
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'network', label: 'Network', icon: Network },
-    { id: 'web', label: 'Web Security', icon: Globe },
-    { id: 'crypto', label: 'Cryptography', icon: Lock },
-  ];
+
 
   return (
     <>

@@ -1,14 +1,19 @@
-import { useState, useRef, useEffect } from 'react';
+import { useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Database, Globe, Shield, User, LogOut, Settings, Activity } from 'lucide-react';
+import { Home, Database, Globe, Shield, LogOut, Settings, Activity, Contact, Users, Palette, Moon, Sun } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../lib/AuthContext';
+import { useTheme } from '../components/ThemeProvider';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import gsap from 'gsap';
 
 export default function Topbar() {
   const location = useLocation();
   const { user, logout } = useAuth();
+<<<<<<< HEAD
+=======
+  const { theme, setTheme } = useTheme();
+>>>>>>> 765d447d66be115f3d5cfc85981cc06dd16337c1
   
   const logoRef = useRef(null);
 
@@ -29,6 +34,8 @@ export default function Topbar() {
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/' },
     { id: 'websites', label: 'Active Scans', icon: Globe, path: '/websites' },
     { id: 'history', label: 'AI Reports', icon: Database, path: '/history' },
+    { id: 'contact', label: 'Contact', icon: Contact, path: '/contact' },
+    { id: 'users', label: 'Users', icon: Users, path: '/users' },
   ];
 
   return (
@@ -75,6 +82,34 @@ export default function Topbar() {
             <span className="text-[10px] font-mono text-muted-foreground uppercase tracking-widest">Threat</span>
             <span className="text-[10px] font-bold text-risk-medium font-mono uppercase tracking-widest">MODERATE</span>
           </div>
+
+          <DropdownMenu.Root>
+            <DropdownMenu.Trigger asChild>
+              <button className="flex items-center justify-center h-10 w-10 rounded-full border border-white/10 overflow-hidden hover:ring-2 hover:ring-primary transition-all focus:outline-none bg-black/50 text-muted-foreground hover:text-white">
+                <Palette className="h-4 w-4" />
+              </button>
+            </DropdownMenu.Trigger>
+            <DropdownMenu.Portal>
+              <DropdownMenu.Content 
+                className="min-w-[150px] rounded-xl border border-white/10 bg-card/90 backdrop-blur-xl p-2 shadow-2xl animate-in fade-in slide-in-from-top-2 z-[60]"
+                sideOffset={8}
+                align="end"
+              >
+                <div className="px-3 py-2 mb-1 border-b border-white/5">
+                  <p className="text-xs font-bold text-muted-foreground uppercase tracking-widest">Theme</p>
+                </div>
+                {['light', 'dark', 'midnight', 'neon', 'ocean', 'sunset'].map((t) => (
+                  <DropdownMenu.Item 
+                    key={t}
+                    onClick={() => setTheme(t)}
+                    className={`flex items-center gap-3 px-3 py-2 text-sm rounded-lg cursor-pointer outline-none capitalize ${theme === t ? 'bg-primary/20 text-primary' : 'hover:bg-white/10 text-white'}`}
+                  >
+                    {t === 'light' ? <Sun className="h-4 w-4" /> : <Moon className="h-4 w-4" />} {t}
+                  </DropdownMenu.Item>
+                ))}
+              </DropdownMenu.Content>
+            </DropdownMenu.Portal>
+          </DropdownMenu.Root>
 
           <DropdownMenu.Root>
             <DropdownMenu.Trigger asChild>
