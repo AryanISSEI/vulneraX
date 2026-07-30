@@ -47,6 +47,10 @@ export default function Dashboard() {
   }, []);
 
   const handleScan = async (target) => {
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
     setIsScanning(true);
     setError('');
     setScanResult(null);
