@@ -7,7 +7,7 @@ import os
 from collections import defaultdict
 import time
 from datetime import datetime, timezone
-from fastapi import APIRouter, HTTPException, Request, Depends
+from fastapi import APIRouter, HTTPException, Request, Depends, BackgroundTasks
 from fastapi.responses import FileResponse, JSONResponse
 
 from models import (
@@ -231,7 +231,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
 
 
 @router.post("/scan", response_model=ScanResponse)
-async def start_scan(request: ScanRequest, req: Request, user_id: int = Depends(get_current_user)):
+async def start_scan(request: ScanRequest, req: Request, background_tasks: BackgroundTasks, user_id: int = Depends(get_current_user)):
     """Start a new security scan."""
     client_ip = req.client.host if req.client else "unknown"
     now = time.monotonic()
@@ -251,8 +251,8 @@ async def start_scan(request: ScanRequest, req: Request, user_id: int = Depends(
     timestamp = datetime.now(timezone.utc).isoformat()
     await save_scan(scan_id, target, timestamp, "pending", user_id=user_id)
 
-    # Start scan via Celery
-    celery.send_task("tasks.run_scan_task", args=[scan_id, target, user_id])
+    # Start scan via BackgroundTasks
+    background_tasks.add_task(run_scan_logic, scan_id, target, user_id)
 
     return ScanResponse(
         scan_id=scan_id,

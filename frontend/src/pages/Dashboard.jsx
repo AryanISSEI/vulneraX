@@ -9,10 +9,9 @@ import SSLPanel from '../components/SSLPanel';
 import VulnPanel from '../components/VulnPanel';
 import RiskChart from '../components/RiskChart';
 import RiskGauge from '../components/RiskGauge';
-import ReportDownload from '../components/ReportDownload';
 import RemediationPanel from '../components/RemediationPanel';
 import { startScan, getScanStatus, getScanResults } from '../api/client';
-import { Activity, Network, Globe, Lock } from 'lucide-react';
+import { Activity, Network, Globe, Lock, ShieldAlert } from 'lucide-react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
@@ -20,7 +19,7 @@ gsap.registerPlugin(useGSAP);
 
 export default function Dashboard() {
   const [isScanning, setIsScanning] = useState(false);
-  const [_scanId, setScanId] = useState(null);
+  const [scanId, setScanId] = useState(null);
   const [scanStatus, setScanStatus] = useState(null);
   const [currentPhase, setCurrentPhase] = useState('');
   const [scanResult, setScanResult] = useState(null);
@@ -91,7 +90,12 @@ export default function Dashboard() {
     }
   };
 
-
+  const tabs = [
+    { id: 'overview', label: 'Overview', icon: Activity },
+    { id: 'network', label: 'Network', icon: Network },
+    { id: 'web', label: 'Web Security', icon: Globe },
+    { id: 'crypto', label: 'Cryptography', icon: Lock },
+  ];
 
   return (
     <>
@@ -104,7 +108,6 @@ export default function Dashboard() {
               <h1 className="text-3xl font-bold tracking-tight">Vulnerability Scanner</h1>
               <p className="mt-1 text-muted-foreground">AI-powered web application security assessment</p>
             </div>
-            {scanResult && <ReportDownload scanId={scanResult.scan_id} />}
           </div>
 
           {/* Error Message */}
@@ -132,6 +135,7 @@ export default function Dashboard() {
               <nav className="-mb-px flex space-x-8">
                 {[
                   { id: 'overview', label: 'Overview', icon: Activity },
+                  { id: 'vulnerabilities', label: 'Vulnerabilities', icon: ShieldAlert },
                   { id: 'network', label: 'Network & Ports', icon: Network },
                   { id: 'web', label: 'Web Headers', icon: Globe },
                   { id: 'crypto', label: 'SSL/TLS', icon: Lock },
@@ -158,19 +162,24 @@ export default function Dashboard() {
 
           {/* Tab Content */}
           {scanResult && (
-            <div className="flex-1 flex flex-col" ref={containerRef}>
+            <div className="flex-1 flex flex-col min-h-0 overflow-y-auto pr-2" ref={containerRef}>
               {activeTab === 'overview' && (
-                <div className="space-y-8">
-                  <div className="gsap-stagger-item perspective-[1000px]">
+                <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6 flex-1 min-h-0 grid-rows-[auto_1fr]">
+                  <div className="md:col-span-3 xl:col-span-4 gsap-stagger-item perspective-[1000px]">
                     <QuickInfo scanResult={scanResult} />
                   </div>
-                  <div className="grid grid-cols-1 lg:grid-cols-2 gap-8 gsap-stagger-item perspective-[1000px]">
+                  <div className="md:col-span-1 xl:col-span-1 flex flex-col min-h-0 gsap-stagger-item perspective-[1000px]">
                     <RiskGauge score={scanResult?.risk_score?.overall} />
+                  </div>
+                  <div className="md:col-span-2 xl:col-span-3 flex flex-col min-h-0 gsap-stagger-item perspective-[1000px]">
                     <RiskChart vulnerabilities={scanResult?.vulnerabilities || []} />
                   </div>
-                  <div className="gsap-stagger-item perspective-[1000px]">
-                    <VulnPanel vulnerabilities={scanResult?.vulnerabilities || []} onSelectVuln={setSelectedVuln} />
-                  </div>
+                </div>
+              )}
+
+              {activeTab === 'vulnerabilities' && (
+                <div className="flex-1 flex flex-col min-h-0 gsap-stagger-item perspective-[1000px]">
+                  <VulnPanel vulnerabilities={scanResult?.vulnerabilities || []} onSelectVuln={setSelectedVuln} />
                 </div>
               )}
 

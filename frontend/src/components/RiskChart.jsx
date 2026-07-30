@@ -14,7 +14,7 @@ export default function RiskChart({ vulnerabilities }) {
 
   if (total === 0) return null;
 
-  // Radar chart data using Deep Abyss theme
+  // Radar chart data using Red/Black theme
   const data = {
     labels: ['Critical', 'High', 'Medium', 'Low', 'Info'],
     datasets: [
@@ -24,7 +24,7 @@ export default function RiskChart({ vulnerabilities }) {
         backgroundColor: 'rgba(220, 38, 38, 0.2)', // Red transparent
         borderColor: 'rgba(220, 38, 38, 1)',
         pointBackgroundColor: [
-          '#ff003c', // Critical
+          '#ff0000', // Critical
           '#ff7e00', // High
           '#facc15', // Medium
           '#39ff14', // Low
@@ -53,7 +53,7 @@ export default function RiskChart({ vulnerabilities }) {
           circular: true,
         },
         pointLabels: {
-          color: '#00f0ff',
+          color: '#dc2626',
           font: { family: 'monospace', size: 11, weight: 'bold' }
         },
         ticks: {
@@ -68,7 +68,7 @@ export default function RiskChart({ vulnerabilities }) {
       },
       tooltip: {
         backgroundColor: 'rgba(0, 0, 0, 0.8)',
-        titleColor: '#00f0ff',
+        titleColor: '#dc2626',
         bodyColor: '#f8fafc',
         borderColor: 'rgba(220, 38, 38, 0.3)',
         borderWidth: 1,
@@ -82,17 +82,15 @@ export default function RiskChart({ vulnerabilities }) {
   };
 
   return (
-    <GlassCard animateFloat glowColor="cyan" delay={0.5}>
+    <GlassCard className="flex flex-col h-full p-6 w-full">
       <SectionHeader 
         title="Vulnerability Spectrum" 
         subtitle="Radar threat analysis" 
         icon={Activity} 
-        color="cyan" 
+        color="red" 
       />
 
-      <div className="relative h-[250px] z-10 mt-4">
-        {/* Glow behind radar */}
-        <div className="absolute inset-0 bg-primary/10 rounded-full blur-3xl -z-10 transform scale-75"></div>
+      <div className="relative flex-1 w-full min-h-[250px] z-10 mt-4 flex items-center justify-center">
         <Radar data={data} options={options} />
       </div>
     </GlassCard>

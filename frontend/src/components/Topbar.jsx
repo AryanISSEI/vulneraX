@@ -1,9 +1,9 @@
-import { useRef, useEffect } from 'react';
+import { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation } from 'react-router-dom';
-import { Home, Database, Globe, Shield, LogOut, Settings, Activity, Contact, Users, Palette, Moon, Sun } from 'lucide-react';
+import { Home, Database, Globe, Shield, User, LogOut, Settings, Activity, Palette, Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
 import { useAuth } from '../lib/AuthContext';
-import { useTheme } from '../components/ThemeProvider';
+import { useTheme } from './ThemeProvider';
 import * as DropdownMenu from '@radix-ui/react-dropdown-menu';
 import gsap from 'gsap';
 
@@ -14,33 +14,20 @@ export default function Topbar() {
   
   const logoRef = useRef(null);
 
-  // GSAP Breathing glow on the X
-  useEffect(() => {
-    if (logoRef.current) {
-      gsap.to(logoRef.current, {
-        textShadow: "0px 0px 15px rgba(220,38,38,0.8), 0px 0px 30px rgba(220,38,38,0.6)",
-        duration: 2,
-        yoyo: true,
-        repeat: -1,
-        ease: "sine.inOut"
-      });
-    }
-  }, []);
+
 
   const menuItems = [
     { id: 'dashboard', label: 'Dashboard', icon: Home, path: '/' },
     { id: 'websites', label: 'Active Scans', icon: Globe, path: '/websites' },
     { id: 'history', label: 'AI Reports', icon: Database, path: '/history' },
-    { id: 'contact', label: 'Contact', icon: Contact, path: '/contact' },
-    { id: 'users', label: 'Users', icon: Users, path: '/users' },
   ];
 
   return (
-    <div className="fixed top-5 left-0 right-0 z-50 flex justify-center w-full px-4 pointer-events-none">
-      <header className="h-16 w-full max-w-4xl glass-nav rounded-full flex items-center justify-between px-6 shadow-[0_0_30px_rgba(0,0,0,0.8)] pointer-events-auto border border-white/10 bg-black/40 backdrop-blur-xl">
+    <div className="sticky top-0 left-0 right-0 z-50 w-full glass-nav bg-black/90 border-b border-white/5">
+      <header className="h-16 w-full max-w-7xl mx-auto flex items-center justify-between px-4 md:px-8">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <Shield className="h-6 w-6 text-primary animate-pulse-glow" />
+          <Shield className="h-6 w-6 text-primary" />
           <span className="font-extrabold text-xl tracking-tight text-white flex">
             Vulnera<span ref={logoRef} className="text-primary ml-[1px]">X</span>
           </span>
@@ -63,7 +50,7 @@ export default function Topbar() {
                 {isActive && (
                   <motion.div
                     layoutId="topbar-active-indicator"
-                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1.5 h-1.5 rounded-full bg-primary shadow-[0_0_8px_rgba(220,38,38,0.8)]"
+                    className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-8 h-0.5 rounded-full bg-primary"
                     transition={{ type: "spring", stiffness: 400, damping: 30 }}
                   />
                 )}

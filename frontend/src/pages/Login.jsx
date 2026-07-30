@@ -2,7 +2,7 @@ import React, { useState } from 'react';
 import { Link } from 'react-router-dom';
 import { motion } from 'framer-motion';
 import { login } from '../api/client';
-import { useAuth } from '../lib/AuthContext';
+
 import { Lock, Shield } from 'lucide-react';
 import ParticleBackground from '../components/ParticleBackground';
 
@@ -41,7 +41,7 @@ export default function Login() {
       <motion.div 
         animate={{ y: [0, -20, 0], rotate: [0, 5, 0] }} 
         transition={{ duration: 10, repeat: Infinity, ease: "easeInOut" }}
-        className="absolute right-10 top-1/4 opacity-5 pointer-events-none z-0 hidden md:block"
+        className="absolute right-10 top-1/4 opacity-20 pointer-events-none z-0 hidden md:block"
       >
         <Shield className="w-96 h-96 text-primary" />
       </motion.div>

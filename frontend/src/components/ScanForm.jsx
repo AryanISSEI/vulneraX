@@ -38,7 +38,7 @@ export default function ScanForm({ onScan, isScanning }) {
     
     for (let i = 0; i < numParticles; i++) {
       const particle = document.createElement('div');
-      particle.className = 'absolute bg-primary rounded-full shadow-[0_0_10px_#dc2626] z-50';
+      particle.className = 'absolute bg-primary rounded-full shadow-[0_0_10px_#00f0ff] z-50';
       
       // Random size
       const size = Math.random() * 6 + 2;
@@ -107,7 +107,7 @@ export default function ScanForm({ onScan, isScanning }) {
         <div className="relative flex-1">
           <div className="absolute inset-0 bg-primary/20 blur-xl rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
-          <div className="relative flex items-center bg-black/60 border-2 border-white/10 hover:border-primary/50 focus-within:border-primary rounded-2xl px-4 py-2 backdrop-blur-xl transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] focus-within:shadow-[0_0_30px_rgba(220,38,38,0.2)]">
+          <div className="relative flex items-center bg-black/60 border-2 border-white/10 hover:border-primary/50 focus-within:border-primary rounded-2xl px-4 py-2 backdrop-blur-xl transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] focus-within:shadow-[0_0_30px_rgba(0,240,255,0.2)]">
             <Target className="h-6 w-6 text-primary animate-pulse" />
             <input
               type="text"
@@ -125,7 +125,7 @@ export default function ScanForm({ onScan, isScanning }) {
           disabled={!target.trim() || isScanning || shattered}
           className={`relative overflow-hidden rounded-2xl px-10 py-4 font-bold tracking-widest uppercase transition-all duration-300 ${
             !isScanning && target.trim() && !shattered
-              ? 'bg-primary text-black hover:scale-105 shadow-[0_0_20px_rgba(220,38,38,0.4)] hover:shadow-[0_0_40px_rgba(220,38,38,0.6)]' 
+              ? 'bg-primary text-black hover:scale-105 shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:shadow-[0_0_40px_rgba(0,240,255,0.6)]' 
               : 'bg-white/5 text-white/50 border border-white/10'
           }`}
         >

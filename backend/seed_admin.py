@@ -1,16 +1,14 @@
 import asyncio
 from sqlalchemy import select
-from passlib.context import CryptContext
+import bcrypt
 import sys
 import os
 
 sys.path.append(os.path.dirname(os.path.abspath(__file__)))
 from database import init_db, User, async_session
 
-pwd_context = CryptContext(schemes=["bcrypt"], deprecated="auto")
-
 def get_password_hash(password: str) -> str:
-    return pwd_context.hash(password)
+    return bcrypt.hashpw(password.encode('utf-8'), bcrypt.gensalt()).decode('utf-8')
 
 async def seed_admin():
     await init_db()

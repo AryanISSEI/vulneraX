@@ -109,7 +109,7 @@ export default function RiskGauge({ score }) {
   }, [score, info.color]);
 
   return (
-    <GlassCard animateFloat glowColor="cyan" className="flex flex-col items-center">
+    <GlassCard className="flex flex-col items-center flex-1 w-full h-full p-6">
       <div className="self-start w-full">
         <SectionHeader 
           title="Risk Score" 
@@ -118,8 +118,7 @@ export default function RiskGauge({ score }) {
           color="cyan" 
         />
       </div>
-      <div className="relative z-10 scale-110 mt-4">
-        <div className="absolute inset-0 bg-black/20 rounded-full blur-xl -z-10 transform scale-75"></div>
+      <div className="relative z-10 scale-110 mt-4 flex-1 flex items-center justify-center">
         <canvas ref={canvasRef} />
       </div>
     </GlassCard>

@@ -1,15 +1,9 @@
 import { useState } from 'react';
-import { Search, Plus, Filter, Download, MoreVertical, CheckCircle2 } from 'lucide-react';
+import { Search, Plus, Filter, Download, MoreVertical, CheckCircle2, Globe } from 'lucide-react';
 import { motion } from 'framer-motion';
 
 export default function Websites() {
-  const [websites] = useState([
-    { id: 1, domain: 'app.example.com', status: 'Active', scanDate: '2 hours ago', vulns: { critical: 2, high: 5, medium: 12, low: 24 } },
-    { id: 2, domain: 'api.example.com', status: 'Inactive', scanDate: '1 day ago', vulns: { critical: 0, high: 2, medium: 8, low: 15 } },
-    { id: 3, domain: 'portal.example.com', status: 'Active', scanDate: '2 days ago', vulns: { critical: 5, high: 12, medium: 34, low: 89 } },
-    { id: 4, domain: 'dev.example.com', status: 'Inactive', scanDate: '5 days ago', vulns: { critical: 0, high: 0, medium: 3, low: 12 } },
-    { id: 5, domain: 'test.example.com', status: 'Active', scanDate: '1 week ago', vulns: { critical: 1, high: 4, medium: 15, low: 42 } },
-  ]);
+  const [websites, setWebsites] = useState([]);
 
   const container = {
     hidden: { opacity: 0 },
@@ -63,58 +57,68 @@ export default function Websites() {
         </div>
 
         {/* Table */}
-        <div className="flex-1 overflow-auto bg-card">
-          <table className="w-full text-left border-collapse min-w-[800px]">
-            <thead className="bg-secondary/50 sticky top-0 z-10">
-              <tr>
-                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Domain</th>
-                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scan Date</th>
-                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vulnerabilities</th>
-                <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
-              </tr>
-            </thead>
-            <motion.tbody 
-              className="divide-y divide-border bg-card"
-              variants={container}
-              initial="hidden"
-              animate="show"
-            >
-              {websites.map((site) => (
-                <motion.tr key={site.id} variants={item} className="hover:bg-secondary/50 transition-colors">
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-3">
-                      <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                      <span className="font-medium text-foreground">{site.domain}</span>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4">
-                    <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                      site.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'
-                    }`}>
-                      {site.status}
-                    </span>
-                  </td>
-                  <td className="px-6 py-4 text-sm text-muted-foreground">
-                    {site.scanDate}
-                  </td>
-                  <td className="px-6 py-4">
-                    <div className="flex items-center gap-1.5">
-                      <div className="flex items-center justify-center w-7 h-7 rounded bg-red-500/10 text-red-500 text-xs font-bold">{site.vulns.critical}</div>
-                      <div className="flex items-center justify-center w-7 h-7 rounded bg-orange-500/10 text-orange-500 text-xs font-bold">{site.vulns.high}</div>
-                      <div className="flex items-center justify-center w-7 h-7 rounded bg-yellow-500/10 text-yellow-500 text-xs font-bold">{site.vulns.medium}</div>
-                      <div className="flex items-center justify-center w-7 h-7 rounded bg-blue-500/10 text-blue-500 text-xs font-bold">{site.vulns.low}</div>
-                    </div>
-                  </td>
-                  <td className="px-6 py-4 text-right">
-                    <button className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-secondary">
-                      <MoreVertical className="h-5 w-5" />
-                    </button>
-                  </td>
-                </motion.tr>
-              ))}
-            </motion.tbody>
-          </table>
+        <div className="flex-1 overflow-auto bg-card flex flex-col">
+          {websites.length === 0 ? (
+            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
+              <Globe className="h-16 w-16 text-muted-foreground mb-4 opacity-20" />
+              <h3 className="text-xl font-medium text-foreground">No Websites Found</h3>
+              <p className="text-muted-foreground text-sm max-w-md mt-2">
+                You haven't added any websites yet. Click the "Add Website" button above to register a new target.
+              </p>
+            </div>
+          ) : (
+            <table className="w-full text-left border-collapse min-w-[800px]">
+              <thead className="bg-secondary/50 sticky top-0 z-10">
+                <tr>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Domain</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scan Date</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vulnerabilities</th>
+                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
+                </tr>
+              </thead>
+              <motion.tbody 
+                className="divide-y divide-border bg-card"
+                variants={container}
+                initial="hidden"
+                animate="show"
+              >
+                {websites.map((site) => (
+                  <motion.tr key={site.id} variants={item} className="hover:bg-secondary/50 transition-colors">
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-3">
+                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
+                        <span className="font-medium text-foreground">{site.domain}</span>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4">
+                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
+                        site.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'
+                      }`}>
+                        {site.status}
+                      </span>
+                    </td>
+                    <td className="px-6 py-4 text-sm text-muted-foreground">
+                      {site.scanDate}
+                    </td>
+                    <td className="px-6 py-4">
+                      <div className="flex items-center gap-1.5">
+                        <div className="flex items-center justify-center w-7 h-7 rounded bg-red-500/10 text-red-500 text-xs font-bold">{site.vulns.critical}</div>
+                        <div className="flex items-center justify-center w-7 h-7 rounded bg-orange-500/10 text-orange-500 text-xs font-bold">{site.vulns.high}</div>
+                        <div className="flex items-center justify-center w-7 h-7 rounded bg-yellow-500/10 text-yellow-500 text-xs font-bold">{site.vulns.medium}</div>
+                        <div className="flex items-center justify-center w-7 h-7 rounded bg-blue-500/10 text-blue-500 text-xs font-bold">{site.vulns.low}</div>
+                      </div>
+                    </td>
+                    <td className="px-6 py-4 text-right">
+                      <button className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-secondary">
+                        <MoreVertical className="h-5 w-5" />
+                      </button>
+                    </td>
+                  </motion.tr>
+                ))}
+              </motion.tbody>
+            </table>
+          )}
         </div>
         
         {/* Pagination placeholder */}

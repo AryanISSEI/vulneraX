@@ -101,7 +101,7 @@ const ParticleBackground = () => {
 
     const init = () => {
       particlesArray = [];
-      const numberOfParticles = 200; // Target ~200 particles
+      const numberOfParticles = 80; // Reduced from 200
       
       for (let i = 0; i < numberOfParticles; i++) {
         const size = (Math.random() * 2) + 0.5;
@@ -110,7 +110,7 @@ const ParticleBackground = () => {
         const directionX = (Math.random() * 1.5) - 0.75;
         const directionY = (Math.random() * 1.5) - 0.75;
         // Primary color that matches VulneraX theme (red)
-        const color = 'rgba(220, 38, 38, 0.7)'; 
+        const color = 'rgba(239, 68, 68, 0.7)'; 
 
         particlesArray.push(new Particle(x, y, directionX, directionY, size, color));
       }
@@ -129,7 +129,7 @@ const ParticleBackground = () => {
              // Opacity is relative to distance
              opacityValue = 1 - (distance/15000);
              if (opacityValue > 0) {
-               ctx.strokeStyle = `rgba(220, 38, 38, ${opacityValue * 0.25})`; // Subtle red line
+               ctx.strokeStyle = `rgba(239, 68, 68, ${opacityValue * 0.25})`; // Subtle red line
                ctx.lineWidth = 1;
                ctx.beginPath();
                ctx.moveTo(particlesArray[a].x, particlesArray[a].y);

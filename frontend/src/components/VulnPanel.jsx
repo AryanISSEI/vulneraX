@@ -14,7 +14,7 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
   }, [activeTab, vulnerabilities]);
 
   return (
-    <GlassCard className="p-6">
+    <GlassCard className="p-6 flex flex-col h-full w-full">
       <SectionHeader
         title="Discovered Vulnerabilities"
         subtitle="Investigate exposed endpoints, severity, and remediation actions."
@@ -28,7 +28,7 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
             onClick={() => setActiveTab(tab)}
             className={`rounded-full px-4 py-2 text-sm transition-all duration-300 font-mono uppercase tracking-widest text-[10px] ${
               activeTab === tab
-                ? 'bg-primary text-black shadow-[0_0_15px_rgba(220,38,38,0.4)]'
+                ? 'bg-primary text-white'
                 : 'bg-white/5 text-slate-300 hover:bg-white/10'
             }`}
           >
@@ -37,7 +37,7 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
         ))}
       </div>
 
-      <div className="mt-6 overflow-x-auto">
+      <div className="mt-6 flex-1 overflow-y-auto min-h-0 pr-2">
         <table className="w-full text-left text-sm">
           <thead className="text-slate-400">
             <tr className="border-b border-white/10">
@@ -53,9 +53,9 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
                // Determine styles based on severity
                let sevClass = "bg-green-500/10 text-green-500 border border-green-500/20";
                let sevGlow = "bg-green-500";
-               if (item.severity === 'Critical') { sevClass = "bg-destructive/10 text-destructive border border-destructive/20"; sevGlow = "bg-destructive shadow-[0_0_10px_#ff003c]"; }
-               else if (item.severity === 'High') { sevClass = "bg-[#ff7e00]/10 text-[#ff7e00] border border-[#ff7e00]/20"; sevGlow = "bg-[#ff7e00] shadow-[0_0_10px_#ff7e00]"; }
-               else if (item.severity === 'Medium') { sevClass = "bg-[#facc15]/10 text-[#facc15] border border-[#facc15]/20"; sevGlow = "bg-[#facc15] shadow-[0_0_10px_#facc15]"; }
+               if (item.severity === 'Critical') { sevClass = "bg-destructive/10 text-destructive border border-destructive/20"; sevGlow = "bg-destructive"; }
+               else if (item.severity === 'High') { sevClass = "bg-[#ff7e00]/10 text-[#ff7e00] border border-[#ff7e00]/20"; sevGlow = "bg-[#ff7e00]"; }
+               else if (item.severity === 'Medium') { sevClass = "bg-[#facc15]/10 text-[#facc15] border border-[#facc15]/20"; sevGlow = "bg-[#facc15]"; }
 
                return (
                 <tr key={`${item.name}-${i}`} className="border-b border-white/5 hover:bg-white/5 transition-colors">
@@ -71,7 +71,7 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
                   <td className="py-4 px-2">
                     <button 
                       onClick={() => onSelectVuln?.(item)}
-                      className="rounded-lg bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary px-3 py-1.5 text-[10px] font-bold tracking-widest text-primary hover:text-black transition-all shadow-[0_0_10px_rgba(220,38,38,0)] hover:shadow-[0_0_15px_rgba(220,38,38,0.5)] font-mono uppercase"
+                      className="rounded-lg bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary px-3 py-1.5 text-[10px] font-bold tracking-widest text-primary hover:text-white transition-all font-mono uppercase"
                     >
                       Oracle
                     </button>

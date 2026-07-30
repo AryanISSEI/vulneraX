@@ -67,7 +67,7 @@ export default function HeaderScanBar({ onScan, isScanning }) {
           <button
             type="submit"
             disabled={isScanning}
-            className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-red-600 px-6 text-sm font-semibold text-slate-950 shadow-[0_0_30px_rgba(220,38,38,0.25)] transition hover:bg-red-500 disabled:opacity-60"
+            className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_0_30px_rgba(0,240,255,0.25)] transition hover:bg-cyan-300 disabled:opacity-60"
           >
             {isScanning ? <Sparkles className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
             {isScanning ? 'Assessing...' : 'Start Assessment'}

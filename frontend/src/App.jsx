@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Contact from './pages/Contact';
 import Users from './pages/Users';
+import ParticleBackground from './components/ParticleBackground';
 
 import { ThemeProvider } from './components/ThemeProvider';
 
@@ -25,9 +26,10 @@ function MainLayout() {
   const location = useLocation();
   
   return (
-    <div className="flex flex-col h-screen w-screen overflow-hidden bg-background">
+    <div className="flex flex-col h-screen w-screen overflow-hidden bg-background relative">
+      <ParticleBackground />
       <Topbar />
-      <div className="flex-1 overflow-hidden relative network-bg-full">
+      <div className="flex-1 overflow-hidden relative z-10">
         <main className="h-full w-full overflow-auto flex flex-col relative px-4 md:px-8">
           <AnimatePresence mode="wait">
             <motion.div
@@ -36,7 +38,7 @@ function MainLayout() {
               animate={{ opacity: 1, y: 0 }}
               exit={{ opacity: 0, y: -10 }}
               transition={{ duration: 0.2 }}
-              className="w-full h-full flex flex-col max-w-7xl mx-auto pt-28 pb-12"
+              className="w-full h-full flex flex-col max-w-7xl mx-auto pt-8 pb-12"
             >
               <Routes location={location}>
                 <Route path="/" element={<Dashboard />} />

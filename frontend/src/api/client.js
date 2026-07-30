@@ -34,17 +34,38 @@ client.interceptors.response.use(
   }
 );
 
-export const login = (username, password) => client.post('/auth/login', { username, password });
-export const register = (username, password) => client.post('/auth/register', { username, password });
-export const getMe = () => client.get('/auth/me');
+export const login = async (username, password) => {
+  return client.post('/auth/login', { username, password });
+};
 
-export const startScan = (target) => client.post('/scan', { target });
-export const getScanStatus = (scanId) => client.get(`/scan/${scanId}/status`);
-export const getScanResults = (scanId) => client.get(`/scan/${scanId}/results`);
-export const getScanHistory = () => client.get('/history');
-export const getReport = (scanId, format) =>
-  client.get(`/report/${scanId}?format=${format}`, {
+export const register = async (username, password) => {
+  return client.post('/auth/register', { username, password });
+};
+
+export const getMe = async () => {
+  return client.get('/auth/me');
+};
+
+export const startScan = async (target) => {
+  return client.post('/scan', { target });
+};
+
+export const getScanStatus = async (scanId) => {
+  return client.get(`/scan/${scanId}/status`);
+};
+
+export const getScanResults = async (scanId) => {
+  return client.get(`/scan/${scanId}/results`);
+};
+
+export const getScanHistory = async () => {
+  return client.get('/history');
+};
+
+export const getReport = async (scanId, format) => {
+  return client.get(`/report/${scanId}?format=${format}`, {
     responseType: format === 'json' ? 'json' : 'blob',
   });
+};
 
 export default client;
