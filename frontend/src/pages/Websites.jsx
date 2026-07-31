@@ -1,138 +1,235 @@
-import { useState } from 'react';
-import { Search, Plus, Filter, Download, MoreVertical, CheckCircle2, Globe } from 'lucide-react';
+import React, { useState, useEffect, useRef } from 'react';
+import { useNavigate } from 'react-router-dom';
+import { Globe, ExternalLink, RefreshCw, Loader2, Play, Activity, ArrowRight, ShieldCheck } from 'lucide-react';
 import { motion } from 'framer-motion';
+import { getScanHistory, getScanStatus } from '../api/client';
+import { formatTimestamp } from '../utils/helpers';
+
+const PHASES = [
+  'DNS Lookup',
+  'Port Scanning',
+  'Fingerprinting',
+  'Checking Headers',
+  'Analyzing Cookies',
+  'SSL Scan',
+  'Crawling Website',
+  'Testing Vulnerabilities',
+  'Calculating Risk Score',
+];
+
+function getPhasePercentage(currentPhase) {
+  if (!currentPhase) return 10;
+  const lower = currentPhase.toLowerCase();
+  if (lower.includes('completed')) return 100;
+  if (lower.includes('initializing')) return 10;
+  
+  const idx = PHASES.findIndex((p) => lower.includes(p.toLowerCase()));
+  if (idx === -1) return 25;
+  return Math.min(95, Math.max(12, Math.round(((idx + 1) / PHASES.length) * 100)));
+}
 
 export default function Websites() {
-  const [websites, setWebsites] = useState([]);
+  const [activeScans, setActiveScans] = useState([]);
+  const [loading, setLoading] = useState(true);
+  const pollRef = useRef(null);
+  const navigate = useNavigate();
 
-  const container = {
-    hidden: { opacity: 0 },
-    show: { opacity: 1, transition: { staggerChildren: 0.1 } }
+  const fetchActiveScans = async () => {
+    try {
+      const { data } = await getScanHistory();
+      const allScans = data.scans || [];
+      let runningScans = allScans.filter(s => s.status === 'running' || s.status === 'pending');
+
+      const saved = localStorage.getItem('vulnerax_active_scan');
+      if (saved) {
+        try {
+          const localActive = JSON.parse(saved);
+          if (localActive.scanId && (localActive.scanStatus === 'running' || localActive.scanStatus === 'pending')) {
+            const exists = runningScans.some(s => s.scan_id === localActive.scanId);
+            if (!exists && localActive.target) {
+              runningScans.unshift({
+                scan_id: localActive.scanId,
+                target: localActive.target,
+                timestamp: new Date().toISOString(),
+                status: localActive.scanStatus,
+                current_phase: localActive.currentPhase || 'Initializing...'
+              });
+            }
+          }
+        } catch (e) {}
+      }
+
+      const updatedScans = await Promise.all(
+        runningScans.map(async (scan) => {
+          try {
+            const { data: statusData } = await getScanStatus(scan.scan_id);
+            return {
+              ...scan,
+              status: statusData.status || scan.status,
+              current_phase: statusData.current_phase || scan.current_phase || 'In Progress'
+            };
+          } catch (err) {
+            return scan;
+          }
+        })
+      );
+
+      const stillRunning = updatedScans.filter(s => s.status === 'running' || s.status === 'pending');
+      setActiveScans(stillRunning);
+    } catch (err) {
+      console.error('Error fetching active scans:', err);
+    } finally {
+      setLoading(false);
+    }
   };
 
-  const item = {
-    hidden: { opacity: 0, y: 10 },
-    show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
+  useEffect(() => {
+    fetchActiveScans();
+
+    pollRef.current = setInterval(() => {
+      fetchActiveScans();
+    }, 1500);
+
+    return () => {
+      if (pollRef.current) clearInterval(pollRef.current);
+    };
+  }, []);
+
+  const handleOpenLiveDashboard = (scan) => {
+    localStorage.setItem('vulnerax_active_scan', JSON.stringify({
+      target: scan.target,
+      scanId: scan.scan_id,
+      scanStatus: scan.status,
+      currentPhase: scan.current_phase
+    }));
+    navigate('/');
   };
 
   return (
-    <div className="w-full h-full p-8 md:p-12 flex flex-col space-y-8 glass-panel rounded-2xl border border-white/10 relative overflow-hidden">
-      <div className="flex justify-between items-start shrink-0">
+    <div className="w-full h-full p-6 md:p-8 flex flex-col space-y-6 glass-panel rounded-xl border border-border relative overflow-hidden">
+      {/* Sleek Top Bar */}
+      <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0 border-b border-border/60 pb-5">
         <div>
-          <h1 className="text-3xl font-bold tracking-tight text-foreground">Websites Interfaces</h1>
-          <p className="text-muted-foreground mt-1">Welcome back, user</p>
+          <h1 className="text-2xl font-bold tracking-tight text-foreground flex items-center gap-2.5">
+            <Activity className="h-6 w-6 text-primary animate-pulse" />
+            Active Scans
+          </h1>
+          <p className="text-xs text-muted-foreground mt-0.5">
+            Live monitoring of ongoing security assessment targets
+          </p>
         </div>
-        <button className="bg-primary hover:bg-primary/90 text-primary-foreground px-5 py-2.5 rounded-lg flex items-center gap-2 font-medium transition-all shadow-sm hover:scale-105 animate-pulse-glow">
-          <Plus className="h-5 w-5" />
-          Add Website
-        </button>
-      </div>
-
-      <div className="flex-1 bg-card rounded-xl shadow-sm border border-border flex flex-col overflow-hidden">
-        {/* Table Toolbar */}
-        <div className="p-4 border-b border-border flex flex-wrap items-center justify-between gap-4 bg-card">
-          <div className="flex items-center gap-3">
-            <div className="relative">
-              <Search className="absolute left-3 top-1/2 -translate-y-1/2 h-4 w-4 text-muted-foreground" />
-              <input 
-                type="text" 
-                placeholder="Search..." 
-                className="pl-9 pr-4 py-2 border border-border rounded-lg text-sm focus:outline-none focus:ring-2 focus:ring-primary/20 w-64 bg-input text-foreground"
-              />
-            </div>
-            <select className="border border-border rounded-lg px-3 py-2 text-sm text-foreground focus:outline-none focus:ring-2 focus:ring-primary/20 appearance-none bg-input">
-              <option>Status: All</option>
-              <option>Active</option>
-              <option>Inactive</option>
-            </select>
-            <button className="p-2 border border-border rounded-lg text-muted-foreground hover:bg-secondary transition-colors bg-card">
-              <Filter className="h-4 w-4" />
-            </button>
-          </div>
-          
-          <button className="flex items-center gap-2 text-sm text-foreground border border-border px-4 py-2 rounded-lg hover:bg-secondary transition-colors bg-card">
-            <Download className="h-4 w-4" />
-            Export
+        <div className="flex items-center gap-2">
+          <button 
+            onClick={fetchActiveScans} 
+            className="p-2 border border-border rounded-lg text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors"
+            title="Refresh Active Scans"
+          >
+            <RefreshCw className={`h-4 w-4 ${loading ? 'animate-spin' : ''}`} />
+          </button>
+          <button 
+            onClick={() => navigate('/')}
+            className="bg-primary hover:bg-primary/90 text-primary-foreground px-4 py-2 rounded-lg flex items-center gap-2 text-xs font-semibold transition-all shadow-sm"
+          >
+            <Play className="h-3.5 w-3.5 fill-current" />
+            Launch New Scan
           </button>
         </div>
+      </div>
 
-        {/* Table */}
-        <div className="flex-1 overflow-auto bg-card flex flex-col">
-          {websites.length === 0 ? (
-            <div className="flex-1 flex flex-col items-center justify-center p-8 text-center min-h-[300px]">
-              <Globe className="h-16 w-16 text-muted-foreground mb-4 opacity-20" />
-              <h3 className="text-xl font-medium text-foreground">No Websites Found</h3>
-              <p className="text-muted-foreground text-sm max-w-md mt-2">
-                You haven't added any websites yet. Click the "Add Website" button above to register a new target.
-              </p>
-            </div>
-          ) : (
-            <table className="w-full text-left border-collapse min-w-[800px]">
-              <thead className="bg-secondary/50 sticky top-0 z-10">
-                <tr>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Domain</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Status</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Scan Date</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider">Vulnerabilities</th>
-                  <th className="px-6 py-4 text-xs font-semibold text-muted-foreground uppercase tracking-wider text-right">Actions</th>
-                </tr>
-              </thead>
-              <motion.tbody 
-                className="divide-y divide-border bg-card"
-                variants={container}
-                initial="hidden"
-                animate="show"
-              >
-                {websites.map((site) => (
-                  <motion.tr key={site.id} variants={item} className="hover:bg-secondary/50 transition-colors">
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-3">
-                        <CheckCircle2 className="h-5 w-5 text-emerald-500" />
-                        <span className="font-medium text-foreground">{site.domain}</span>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4">
-                      <span className={`inline-flex items-center px-2.5 py-0.5 rounded-full text-xs font-medium ${
-                        site.status === 'Active' ? 'bg-emerald-500/10 text-emerald-500' : 'bg-muted text-muted-foreground'
-                      }`}>
-                        {site.status}
-                      </span>
-                    </td>
-                    <td className="px-6 py-4 text-sm text-muted-foreground">
-                      {site.scanDate}
-                    </td>
-                    <td className="px-6 py-4">
-                      <div className="flex items-center gap-1.5">
-                        <div className="flex items-center justify-center w-7 h-7 rounded bg-red-500/10 text-red-500 text-xs font-bold">{site.vulns.critical}</div>
-                        <div className="flex items-center justify-center w-7 h-7 rounded bg-orange-500/10 text-orange-500 text-xs font-bold">{site.vulns.high}</div>
-                        <div className="flex items-center justify-center w-7 h-7 rounded bg-yellow-500/10 text-yellow-500 text-xs font-bold">{site.vulns.medium}</div>
-                        <div className="flex items-center justify-center w-7 h-7 rounded bg-blue-500/10 text-blue-500 text-xs font-bold">{site.vulns.low}</div>
-                      </div>
-                    </td>
-                    <td className="px-6 py-4 text-right">
-                      <button className="text-muted-foreground hover:text-foreground transition-colors p-2 rounded-md hover:bg-secondary">
-                        <MoreVertical className="h-5 w-5" />
-                      </button>
-                    </td>
-                  </motion.tr>
-                ))}
-              </motion.tbody>
-            </table>
-          )}
-        </div>
-        
-        {/* Pagination placeholder */}
-        <div className="p-4 border-t border-border flex items-center justify-between text-sm text-muted-foreground bg-card">
-          <span>Showing 1 to 5 of 12 entries</span>
-          <div className="flex items-center gap-1">
-            <button className="px-3 py-1 border border-border rounded hover:bg-secondary disabled:opacity-50">Prev</button>
-            <button className="px-3 py-1 border border-primary rounded bg-primary text-primary-foreground">1</button>
-            <button className="px-3 py-1 border border-border rounded hover:bg-secondary">2</button>
-            <button className="px-3 py-1 border border-border rounded hover:bg-secondary">3</button>
-            <button className="px-3 py-1 border border-border rounded hover:bg-secondary">Next</button>
+      {/* Main Body */}
+      <div className="flex-1 flex flex-col overflow-y-auto">
+        {loading && activeScans.length === 0 ? (
+          <div className="flex-1 flex items-center justify-center p-12">
+            <Loader2 className="h-7 w-7 text-primary animate-spin" />
           </div>
-        </div>
+        ) : activeScans.length === 0 ? (
+          /* Clean Empty State */
+          <div className="flex-1 flex flex-col items-center justify-center p-8 text-center rounded-xl bg-card/30 border border-border/40 min-h-[280px]">
+            <div className="p-3 rounded-full bg-primary/10 text-primary mb-3">
+              <ShieldCheck className="h-8 w-8" />
+            </div>
+            <h3 className="text-lg font-semibold text-foreground">No Scans in Progress</h3>
+            <p className="text-muted-foreground text-xs max-w-sm mt-1">
+              All scans are complete. View past vulnerability reports in <span className="text-primary font-medium">AI Reports</span> or start a new scan.
+            </p>
+            <button 
+              onClick={() => navigate('/')}
+              className="mt-5 px-4 py-2 bg-primary hover:bg-primary/90 text-primary-foreground text-xs font-semibold rounded-lg transition-all flex items-center gap-1.5 shadow-sm"
+            >
+              Start New Scan
+            </button>
+          </div>
+        ) : (
+          /* Clean Minimal Active Scans List */
+          <div className="space-y-4">
+            {activeScans.map((scan) => {
+              const progressPct = getPhasePercentage(scan.current_phase);
+              
+              return (
+                <motion.div
+                  key={scan.scan_id}
+                  initial={{ opacity: 0, y: 10 }}
+                  animate={{ opacity: 1, y: 0 }}
+                  className="p-5 rounded-xl bg-card/70 border border-border hover:border-primary/40 transition-all flex flex-col space-y-4 shadow-sm"
+                >
+                  <div className="flex flex-wrap items-center justify-between gap-3">
+                    <div className="flex items-center gap-3">
+                      <div className="p-2 rounded-lg bg-primary/10 text-primary shrink-0">
+                        <Globe className="h-5 w-5 animate-pulse" />
+                      </div>
+                      <div>
+                        <div className="text-[11px] font-semibold uppercase tracking-wider text-muted-foreground">
+                          Target
+                        </div>
+                        <a
+                          href={scan.target.startsWith('http') ? scan.target : `https://${scan.target}`}
+                          target="_blank"
+                          rel="noopener noreferrer"
+                          className="text-base font-bold text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+                        >
+                          {scan.target}
+                          <ExternalLink className="h-3.5 w-3.5 opacity-50 hover:opacity-100" />
+                        </a>
+                      </div>
+                    </div>
+
+                    <div className="flex items-center gap-3">
+                      <span className="inline-flex items-center gap-1.5 px-3 py-1 rounded-full text-xs font-semibold bg-amber-500/10 text-amber-400 border border-amber-500/20">
+                        <Loader2 className="h-3.5 w-3.5 animate-spin" />
+                        {scan.current_phase || 'Scanning...'} ({progressPct}%)
+                      </span>
+
+                      <button
+                        onClick={() => handleOpenLiveDashboard(scan)}
+                        className="flex items-center gap-1.5 px-3.5 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/20 font-semibold text-xs rounded-lg transition-colors"
+                      >
+                        Live Dashboard
+                        <ArrowRight className="h-3.5 w-3.5" />
+                      </button>
+                    </div>
+                  </div>
+
+                  {/* Sleek Progress Bar */}
+                  <div className="space-y-1.5 pt-1">
+                    <div className="w-full h-2 bg-secondary rounded-full overflow-hidden">
+                      <div 
+                        className="h-full bg-primary rounded-full transition-all duration-500 ease-out"
+                        style={{ width: `${progressPct}%` }}
+                      />
+                    </div>
+                    <div className="flex justify-between items-center text-[11px] text-muted-foreground">
+                      <span>Phase: <strong className="text-foreground font-medium">{scan.current_phase || 'Initializing'}</strong></span>
+                      <span>Started: {formatTimestamp(scan.timestamp)}</span>
+                    </div>
+                  </div>
+                </motion.div>
+              );
+            })}
+          </div>
+        )}
       </div>
     </div>
   );
 }
+
+

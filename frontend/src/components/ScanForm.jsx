@@ -11,11 +11,12 @@ export default function ScanForm({ onScan, isScanning }) {
 
   const handleSubmit = (e) => {
     e.preventDefault();
-    if (target.trim() && !isScanning) {
+    if (target.trim()) {
       triggerShatterEffect();
       // Delay the actual scan start so the animation plays out
       setTimeout(() => {
         onScan(target.trim());
+        setTarget('');
       }, 1500);
     }
   };
@@ -115,21 +116,21 @@ export default function ScanForm({ onScan, isScanning }) {
               onChange={(e) => setTarget(e.target.value)}
               placeholder="ENTER TARGET DOMAIN OR IP..."
               className="w-full bg-transparent border-none outline-none text-white px-4 py-4 font-mono text-lg placeholder:text-white/30 tracking-widest"
-              disabled={isScanning || shattered}
+              disabled={shattered}
             />
           </div>
         </div>
         
         <button 
           type="submit" 
-          disabled={!target.trim() || isScanning || shattered}
+          disabled={!target.trim() || shattered}
           className={`relative overflow-hidden rounded-2xl px-10 py-4 font-bold tracking-widest uppercase transition-all duration-300 ${
-            !isScanning && target.trim() && !shattered
+            target.trim() && !shattered
               ? 'bg-primary text-black hover:scale-105 shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:shadow-[0_0_40px_rgba(0,240,255,0.6)]' 
               : 'bg-white/5 text-white/50 border border-white/10'
           }`}
         >
-          {isScanning ? (
+          {shattered ? (
             <span className="flex items-center gap-2">
               <Loader2 className="h-5 w-5 animate-spin" />
               Scanning

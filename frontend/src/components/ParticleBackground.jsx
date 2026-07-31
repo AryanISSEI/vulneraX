@@ -8,6 +8,7 @@ const ParticleBackground = () => {
     if (!canvas) return;
     
     const ctx = canvas.getContext('2d');
+    if (!ctx) return;
     let animationFrameId;
     let particlesArray = [];
     

@@ -1,4 +1,4 @@
-import { useState, useRef, useEffect } from 'react';
+import React, { useState, useRef, useEffect } from 'react';
 import { NavLink, useLocation, useNavigate } from 'react-router-dom';
 import { Home, Database, Globe, Shield, User, LogOut, Settings, Activity, Palette, Sun, Moon } from 'lucide-react';
 import { motion } from 'framer-motion';
@@ -28,7 +28,7 @@ export default function Topbar() {
       <header className="h-16 w-full max-w-7xl mx-auto flex items-center justify-between px-4 md:px-8">
         {/* Brand */}
         <div className="flex items-center gap-3">
-          <Shield className="h-6 w-6 text-primary" />
+          <Shield className="h-6 w-6 text-primary animate-spin-slow" />
           <span className="font-extrabold text-xl tracking-tight text-foreground flex">
             Vulnera<span ref={logoRef} className="text-primary ml-[1px]">X</span>
           </span>

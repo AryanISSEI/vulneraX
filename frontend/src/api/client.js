@@ -66,6 +66,10 @@ export const deleteScan = async (scanId) => {
   return client.delete(`/scan/${scanId}`);
 };
 
+export const abortScan = async (scanId) => {
+  return client.post(`/scan/${scanId}/abort`);
+};
+
 export const getReport = async (scanId, format) => {
   return client.get(`/report/${scanId}?format=${format}`, {
     responseType: format === 'json' ? 'json' : 'blob',

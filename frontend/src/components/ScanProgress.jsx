@@ -1,5 +1,5 @@
 import React from 'react';
-import { Loader2, CheckCircle2, Zap } from 'lucide-react';
+import { Loader2, CheckCircle2, Zap, XCircle } from 'lucide-react';
 
 const PHASES = [
   'DNS Lookup',
@@ -13,7 +13,7 @@ const PHASES = [
   'Calculating Risk Score',
 ];
 
-export default function ScanProgress({ status, currentPhase }) {
+export default function ScanProgress({ status, currentPhase, onAbort }) {
   if (!status || status === 'completed' || status === 'error') return null;
 
   const currentIndex = PHASES.findIndex(
@@ -21,17 +21,30 @@ export default function ScanProgress({ status, currentPhase }) {
   );
 
   return (
-    <div className="glass-panel p-6 sm:p-8 animate-fade-in">
-      <div className="flex items-center gap-3 mb-5">
-        <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-cyan/15">
-          <Zap className="h-5 w-5 text-accent-cyan animate-pulse" />
+    <div className="glass-panel p-6 sm:p-8 animate-fade-in border border-primary/20 shadow-lg">
+      <div className="flex flex-wrap items-center justify-between gap-4 mb-5">
+        <div className="flex items-center gap-3">
+          <div className="flex h-10 w-10 items-center justify-center rounded-xl bg-accent-cyan/15">
+            <Zap className="h-5 w-5 text-accent-cyan animate-pulse" />
+          </div>
+          <div>
+            <h3 className="font-semibold text-text-primary">Scan in Progress</h3>
+            <p className="text-xs text-text-secondary">
+              {currentPhase || 'Initializing...'}
+            </p>
+          </div>
         </div>
-        <div>
-          <h3 className="font-semibold text-text-primary">Scan in Progress</h3>
-          <p className="text-xs text-text-secondary">
-            {currentPhase || 'Initializing...'}
-          </p>
-        </div>
+
+        {onAbort && (
+          <button
+            onClick={onAbort}
+            className="flex items-center gap-2 px-4 py-2 rounded-xl bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 font-semibold text-xs transition-all shadow-sm hover:scale-105"
+            title="Cancel this scan"
+          >
+            <XCircle className="h-4 w-4" />
+            Abort Scan
+          </button>
+        )}
       </div>
 
       {/* Progress bar */}

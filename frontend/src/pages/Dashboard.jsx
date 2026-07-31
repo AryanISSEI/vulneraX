@@ -1,4 +1,4 @@
-import { useState, useEffect, useRef } from 'react';
+import React, { useState, useEffect, useRef } from 'react';
 import ScanForm from '../components/ScanForm';
 import ScanProgress from '../components/ScanProgress';
 import QuickInfo from '../components/QuickInfo';
@@ -10,8 +10,8 @@ import VulnPanel from '../components/VulnPanel';
 import RiskChart from '../components/RiskChart';
 import RiskGauge from '../components/RiskGauge';
 import RemediationPanel from '../components/RemediationPanel';
-import { startScan, getScanStatus, getScanResults } from '../api/client';
-import { Activity, Network, Globe, Lock, ShieldAlert } from 'lucide-react';
+import { startScan, getScanStatus, getScanResults, abortScan } from '../api/client';
+import { Activity, Network, Globe, Lock, ShieldAlert, ExternalLink, PlusCircle, XCircle } from 'lucide-react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
@@ -20,6 +20,8 @@ gsap.registerPlugin(useGSAP);
 export default function Dashboard() {
   const [isScanning, setIsScanning] = useState(false);
   const [scanId, setScanId] = useState(null);
+  const [targetDomain, setTargetDomain] = useState('');
+  const [showNewScanInput, setShowNewScanInput] = useState(false);
   const [scanStatus, setScanStatus] = useState(null);
   const [currentPhase, setCurrentPhase] = useState('');
   const [scanResult, setScanResult] = useState(null);
@@ -28,6 +30,36 @@ export default function Dashboard() {
   const [selectedVuln, setSelectedVuln] = useState(null);
   const pollRef = useRef(null);
   const containerRef = useRef(null);
+
+  const handleAbort = async () => {
+    if (!scanId && !isScanning) return;
+    if (!window.confirm('Are you sure you want to abort the ongoing scan?')) return;
+
+    if (pollRef.current) {
+      clearInterval(pollRef.current);
+      pollRef.current = null;
+    }
+
+    try {
+      if (scanId) {
+        await abortScan(scanId);
+      }
+    } catch (err) {
+      console.error('Failed to abort scan:', err);
+    }
+
+    setIsScanning(false);
+    setScanStatus('error');
+    setError('Scan aborted by user.');
+
+    localStorage.setItem('vulnerax_active_scan', JSON.stringify({
+      target: targetDomain,
+      scanId: scanId,
+      scanStatus: 'error',
+      currentPhase: 'Aborted',
+      error: 'Scan aborted by user'
+    }));
+  };
 
   // GSAP Animations
   useGSAP(() => {
@@ -39,12 +71,95 @@ export default function Dashboard() {
     }
   }, { dependencies: [scanResult, activeTab], scope: containerRef });
 
-  // Cleanup polling on unmount
+  // Restore active scan from URL query or localStorage and cleanup polling on unmount
   useEffect(() => {
+    const params = new URLSearchParams(window.location.search);
+    const queryScanId = params.get('scan');
+
+    if (queryScanId) {
+      getScanResults(queryScanId)
+        .then(({ data }) => {
+          if (data && data.target) {
+            setScanResult(data);
+            setScanId(queryScanId);
+            setScanStatus('completed');
+            setTargetDomain(data.target);
+            localStorage.setItem('vulnerax_active_scan', JSON.stringify({
+              target: data.target,
+              scanId: queryScanId,
+              scanStatus: 'completed',
+              scanResult: data
+            }));
+          }
+        })
+        .catch(err => console.error('Error loading scan from query param:', err));
+    } else {
+      const saved = localStorage.getItem('vulnerax_active_scan');
+      if (saved) {
+        try {
+          const data = JSON.parse(saved);
+          if (data.target) setTargetDomain(data.target);
+          if (data.scanId) setScanId(data.scanId);
+          if (data.scanResult) {
+            setScanResult(data.scanResult);
+            setScanStatus('completed');
+          } else if (data.scanId && data.scanStatus === 'running') {
+            setIsScanning(true);
+            setScanStatus('running');
+            setCurrentPhase(data.currentPhase || 'Resuming scan...');
+            startPolling(data.scanId, data.target);
+          }
+        } catch (err) {
+          console.error('Error loading saved scan state:', err);
+        }
+      }
+    }
+
     return () => {
       if (pollRef.current) clearInterval(pollRef.current);
     };
   }, []);
+
+  const startPolling = (id, targetStr) => {
+    if (pollRef.current) clearInterval(pollRef.current);
+    pollRef.current = setInterval(async () => {
+      try {
+        const { data: status } = await getScanStatus(id);
+        setCurrentPhase(status.current_phase || '');
+        setScanStatus(status.status);
+
+        localStorage.setItem('vulnerax_active_scan', JSON.stringify({
+          target: targetStr,
+          scanId: id,
+          scanStatus: status.status,
+          currentPhase: status.current_phase,
+        }));
+
+        if (status.status === 'completed') {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+
+          const { data: results } = await getScanResults(id);
+          setScanResult(results);
+          setIsScanning(false);
+
+          localStorage.setItem('vulnerax_active_scan', JSON.stringify({
+            target: targetStr,
+            scanId: id,
+            scanStatus: 'completed',
+            scanResult: results,
+          }));
+        } else if (status.status === 'error') {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+          setError('Scan encountered an error. Please try again.');
+          setIsScanning(false);
+        }
+      } catch (err) {
+        console.error('Status poll error:', err);
+      }
+    }, 1500);
+  };
 
   const handleScan = async (target) => {
     if (pollRef.current) {
@@ -54,6 +169,8 @@ export default function Dashboard() {
     setIsScanning(true);
     setError('');
     setScanResult(null);
+    setTargetDomain(target);
+    setShowNewScanInput(false);
     setScanStatus('pending');
     setCurrentPhase('Initializing...');
     setActiveTab('overview');
@@ -63,43 +180,19 @@ export default function Dashboard() {
       setScanId(data.scan_id);
       setScanStatus('running');
 
-      // Start polling for status
-      pollRef.current = setInterval(async () => {
-        try {
-          const { data: status } = await getScanStatus(data.scan_id);
-          setCurrentPhase(status.current_phase || '');
-          setScanStatus(status.status);
+      localStorage.setItem('vulnerax_active_scan', JSON.stringify({
+        target,
+        scanId: data.scan_id,
+        scanStatus: 'running',
+        currentPhase: 'Initializing...',
+      }));
 
-          if (status.status === 'completed') {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-
-            // Fetch full results
-            const { data: results } = await getScanResults(data.scan_id);
-            setScanResult(results);
-            setIsScanning(false);
-          } else if (status.status === 'error') {
-            clearInterval(pollRef.current);
-            pollRef.current = null;
-            setError('Scan encountered an error. Please try again.');
-            setIsScanning(false);
-          }
-        } catch (err) {
-          console.error('Status poll error:', err);
-        }
-      }, 1500);
+      startPolling(data.scan_id, target);
     } catch (err) {
       setError(err.response?.data?.detail || 'Failed to start scan. Is the backend running?');
       setIsScanning(false);
     }
   };
-
-  const tabs = [
-    { id: 'overview', label: 'Overview', icon: Activity },
-    { id: 'network', label: 'Network', icon: Network },
-    { id: 'web', label: 'Web Security', icon: Globe },
-    { id: 'crypto', label: 'Cryptography', icon: Lock },
-  ];
 
   return (
     <>
@@ -121,15 +214,69 @@ export default function Dashboard() {
             </div>
           )}
 
-          {/* Scanner Input */}
-          <div className="shrink-0">
-            <ScanForm onScan={handleScan} isScanning={isScanning} />
-          </div>
+          {/* Active Target Banner */}
+          {targetDomain && (
+            <div className="p-4 rounded-xl bg-card/60 border border-border backdrop-blur-md flex flex-wrap items-center justify-between gap-4 shrink-0 transition-all">
+              <div className="flex items-center gap-3">
+                <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-primary">
+                  <Globe className="h-5 w-5 animate-pulse" />
+                </div>
+                <div>
+                  <div className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">
+                    Active Scanned Target
+                  </div>
+                  <a
+                    href={targetDomain.startsWith('http') ? targetDomain : `https://${targetDomain}`}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    className="text-lg font-bold text-foreground hover:text-primary transition-colors flex items-center gap-1.5"
+                  >
+                    {targetDomain}
+                    <ExternalLink className="h-4 w-4 opacity-60 hover:opacity-100" />
+                  </a>
+                </div>
+                <span className={`ml-2 px-3 py-1 text-xs font-semibold rounded-full border ${
+                  isScanning
+                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse'
+                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                }`}>
+                  {isScanning ? 'Scan in Progress' : 'Scan Completed'}
+                </span>
+              </div>
+
+              <div className="flex items-center gap-2">
+                {isScanning && (
+                  <button
+                    onClick={handleAbort}
+                    className="flex items-center gap-1.5 px-4 py-2.5 bg-destructive/10 hover:bg-destructive/20 text-destructive border border-destructive/30 font-medium text-sm rounded-xl transition-all shadow-sm hover:scale-[1.02] active:scale-[0.98]"
+                    title="Abort ongoing scan"
+                  >
+                    <XCircle className="h-4 w-4" />
+                    Abort Scan
+                  </button>
+                )}
+                <button
+                  onClick={() => setShowNewScanInput(prev => !prev)}
+                  className="flex items-center gap-2 px-4 py-2.5 bg-primary hover:bg-primary/90 text-primary-foreground font-medium text-sm rounded-xl transition-all shadow-md hover:scale-[1.02] active:scale-[0.98]"
+                >
+                  <PlusCircle className="h-4 w-4" />
+                  {showNewScanInput ? 'Hide Scan Form' : 'Engage New Scan'}
+                </button>
+              </div>
+            </div>
+          )}
+
+          {/* Scanner Input (Shows if no scan active or user clicks Engage New Scan) */}
+          {(!targetDomain || showNewScanInput) && (
+            <div className="shrink-0 transition-all">
+              <ScanForm onScan={handleScan} isScanning={isScanning} />
+            </div>
+          )}
 
           {/* Scan Progress */}
           {isScanning && (
             <div className="shrink-0">
-              <ScanProgress status={scanStatus} currentPhase={currentPhase} />
+              <ScanProgress status={scanStatus} currentPhase={currentPhase} onAbort={handleAbort} />
             </div>
           )}
 
