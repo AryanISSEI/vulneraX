@@ -90,7 +90,7 @@ export default function History() {
             </Button>
           </div>
         </CardHeader>
-        
+
         <CardContent className="flex-1 p-0 overflow-auto">
           {loading ? (
             <div className="flex items-center justify-center py-16">
@@ -126,13 +126,12 @@ export default function History() {
                         {formatTimestamp(scan.timestamp)}
                       </TableCell>
                       <TableCell>
-                        <Badge 
+                        <Badge
                           variant={scan.status === 'error' ? 'destructive' : 'outline'}
                           className={scan.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-none hover:bg-emerald-500/20' : ''}
                         >
-                          <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                            scan.status === 'completed' ? 'bg-emerald-500' : scan.status === 'error' ? 'bg-destructive' : 'bg-amber-500 animate-pulse'
-                          }`} />
+                          <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${scan.status === 'completed' ? 'bg-emerald-500' : scan.status === 'error' ? 'bg-destructive' : 'bg-amber-500 animate-pulse'
+                            }`} />
                           {scan.status}
                         </Badge>
                       </TableCell>
