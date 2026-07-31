@@ -91,6 +91,9 @@ async def save_partial_results(result: ScanResult):
     )
 
 
+_ABORTED_SCANS = set()
+
+
 async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
     """Execute the full scan pipeline."""
     result = ScanResult(
@@ -100,8 +103,20 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         status="running",
     )
 
+    def check_aborted():
+        if scan_id in _ABORTED_SCANS:
+            return True
+        return False
+
     try:
         # Phase 1: DNS Lookup
+        if check_aborted():
+            result.status = "error"
+            result.error = "Scan aborted by user"
+            result.current_phase = "Aborted"
+            await save_partial_results(result)
+            return
+
         result.current_phase = "DNS Lookup"
         await update_scan_status(scan_id, "running", "DNS Lookup")
         try:
@@ -111,6 +126,12 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         await save_partial_results(result)
 
         # Phase 2: Port Scanning
+        if check_aborted():
+            result.status = "error"
+            result.error = "Scan aborted by user"
+            result.current_phase = "Aborted"
+            await save_partial_results(result)
+            return
         result.current_phase = "Port Scanning"
         await update_scan_status(scan_id, "running", "Port Scanning")
         ip = result.dns.ip_address if result.dns else target
@@ -290,6 +311,18 @@ async def get_scan_results(scan_id: str, user_id: int = Depends(get_current_user
         return results
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Failed to parse scan results")
+
+@router.post("/scan/{scan_id}/abort")
+async def abort_scan(scan_id: str, user_id: int = Depends(get_current_user)):
+    """Abort an ongoing security scan."""
+    scan = await get_scan(scan_id)
+    if not scan or scan.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Scan not found")
+        
+    _ABORTED_SCANS.add(scan_id)
+    await update_scan_status(scan_id, "error", "Aborted by user")
+    return {"scan_id": scan_id, "status": "aborted", "message": "Scan aborted successfully"}
+
 
 @router.delete("/scan/{scan_id}")
 async def delete_scan_endpoint(scan_id: str, user_id: int = Depends(get_current_user)):
