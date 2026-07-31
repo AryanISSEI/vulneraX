@@ -1,8 +1,8 @@
 import { useState, useEffect } from 'react';
 import { useNavigate } from 'react-router-dom';
-import { History as HistoryIcon, Search, Shield, ExternalLink, Loader2, RefreshCw } from 'lucide-react';
+import { History as HistoryIcon, Search, Shield, ExternalLink, Loader2, RefreshCw, Trash2 } from 'lucide-react';
 import { motion } from 'framer-motion';
-import { getScanHistory } from '../api/client';
+import { getScanHistory, deleteScan } from '../api/client';
 import { formatTimestamp, riskScoreColor } from '../utils/helpers';
 import { Button } from '../components/ui/button';
 import { Input } from '../components/ui/input';
@@ -25,6 +25,17 @@ export default function History() {
       console.error('Failed to fetch history:', err);
     } finally {
       setLoading(false);
+    }
+  };
+
+  const handleDelete = async (scanId) => {
+    if (!window.confirm('Are you sure you want to delete this scan history?')) return;
+    try {
+      await deleteScan(scanId);
+      setScans(scans.filter(s => s.scan_id !== scanId));
+    } catch (err) {
+      console.error('Failed to delete scan:', err);
+      alert('Failed to delete scan. Please try again.');
     }
   };
 
@@ -134,15 +145,26 @@ export default function History() {
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
-                        <Button
-                          variant="ghost"
-                          size="sm"
-                          className="h-8 gap-1 text-primary hover:text-primary hover:bg-primary/10"
-                          onClick={() => navigate(`/?scan=${scan.scan_id}`)}
-                        >
-                          View
-                          <ExternalLink className="h-3 w-3" />
-                        </Button>
+                        <div className="flex justify-end items-center gap-2">
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 gap-1 text-primary hover:text-primary hover:bg-primary/10"
+                            onClick={() => navigate(`/?scan=${scan.scan_id}`)}
+                          >
+                            View
+                            <ExternalLink className="h-3 w-3" />
+                          </Button>
+                          <Button
+                            variant="ghost"
+                            size="sm"
+                            className="h-8 w-8 p-0 text-destructive hover:text-destructive hover:bg-destructive/10"
+                            onClick={() => handleDelete(scan.scan_id)}
+                            title="Delete scan"
+                          >
+                            <Trash2 className="h-4 w-4" />
+                          </Button>
+                        </div>
                       </TableCell>
                     </TableRow>
                   );

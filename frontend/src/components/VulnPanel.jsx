@@ -59,9 +59,9 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
 
                return (
                 <tr key={`${item.name}-${i}`} className="border-b border-white/5 hover:bg-white/5 transition-colors">
-                  <td className="py-4 px-2 font-bold text-white max-w-[200px] truncate">{item.name || item.type}</td>
+                  <td className="py-4 px-2 font-bold text-white max-w-[200px] truncate" title={item.name}>{item.name}</td>
                   <td className="py-4 px-2 font-mono text-[10px] text-primary truncate max-w-[200px]" title={item.url || item.endpoint}>{item.url || item.endpoint}</td>
-                  <td className="py-4 px-2 text-muted-foreground text-[10px] uppercase tracking-widest">{item.type}</td>
+                  <td className="py-4 px-2 text-muted-foreground text-[10px] uppercase tracking-widest">{item.category}</td>
                   <td className="py-4 px-2">
                     <span className={`inline-flex items-center gap-1.5 rounded-full px-2.5 py-0.5 text-[10px] font-bold uppercase tracking-widest ${sevClass}`}>
                       <span className={`h-1.5 w-1.5 rounded-full animate-pulse ${sevGlow}`} />

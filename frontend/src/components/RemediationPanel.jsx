@@ -1,12 +1,19 @@
 import { X, Copy, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
-import { useState } from 'react';
+import { useState, useEffect } from 'react';
+import { createPortal } from 'react-dom';
 
 export default function RemediationPanel({ vulnerability, onClose }) {
   const [copied, setCopied] = useState(false);
+  const [mounted, setMounted] = useState(false);
 
-  if (!vulnerability) return null;
+  useEffect(() => {
+    setMounted(true);
+    return () => setMounted(false);
+  }, []);
+
+  if (!vulnerability || !mounted) return null;
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -52,7 +59,7 @@ export default function RemediationPanel({ vulnerability, onClose }) {
     }
   };
 
-  return (
+  const panelContent = (
     <AnimatePresence>
       <motion.div
         initial={{ x: "100%", opacity: 0 }}
@@ -84,14 +91,14 @@ export default function RemediationPanel({ vulnerability, onClose }) {
                 <AlertTriangle className="h-3 w-3" />
                 {vulnerability.severity} Risk
               </div>
-              <h1 className="text-2xl font-extrabold text-white mb-2">{vulnerability.type}</h1>
-              <p className="text-muted-foreground font-mono text-sm break-all">{vulnerability.url}</p>
+              <h1 className="text-2xl font-extrabold text-white mb-2">{vulnerability.name}</h1>
+              <p className="text-muted-foreground font-mono text-sm break-all">{vulnerability.url || vulnerability.endpoint}</p>
             </div>
 
             <div className="prose prose-invert prose-p:text-slate-300 prose-headings:text-white max-w-none">
-              {vulnerability.remediation ? (
+              {vulnerability.recommendation ? (
                  <ReactMarkdown components={components}>
-                   {vulnerability.remediation}
+                   {vulnerability.recommendation}
                  </ReactMarkdown>
               ) : (
                 <div className="p-4 bg-white/5 rounded-lg border border-white/10">
@@ -114,4 +121,6 @@ export default function RemediationPanel({ vulnerability, onClose }) {
       </motion.div>
     </AnimatePresence>
   );
+
+  return createPortal(panelContent, document.body);
 }

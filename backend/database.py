@@ -116,3 +116,11 @@ async def update_scan_results(scan_id: str, results_json: str, risk_score: int, 
         stmt = update(Scan).where(Scan.id == scan_id).values(results_json=results_json, risk_score=risk_score, status=status)
         await session.execute(stmt)
         await session.commit()
+
+async def delete_scan(scan_id: str) -> bool:
+    from sqlalchemy import delete
+    async with async_session() as session:
+        stmt = delete(Scan).where(Scan.id == scan_id)
+        result = await session.execute(stmt)
+        await session.commit()
+        return result.rowcount > 0

@@ -14,7 +14,7 @@ from models import (
     ScanRequest, ScanResponse, ScanResult, ScanSummary,
     DNSResult, FingerprintResult, SSLResult, RiskScore
 )
-from database import save_scan, get_scan, get_all_scans, update_scan_status, update_scan_results
+from database import save_scan, get_scan, get_all_scans, update_scan_status, update_scan_results, delete_scan
 from core.security import get_current_user
 from core.celery_app import celery
 
@@ -290,6 +290,19 @@ async def get_scan_results(scan_id: str, user_id: int = Depends(get_current_user
         return results
     except json.JSONDecodeError:
         raise HTTPException(status_code=500, detail="Failed to parse scan results")
+
+@router.delete("/scan/{scan_id}")
+async def delete_scan_endpoint(scan_id: str, user_id: int = Depends(get_current_user)):
+    """Delete a scan."""
+    scan = await get_scan(scan_id)
+    if not scan or scan.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Scan not found")
+    
+    success = await delete_scan(scan_id)
+    if not success:
+        raise HTTPException(status_code=500, detail="Failed to delete scan")
+    return {"message": "Scan deleted successfully"}
+
 
 
 @router.get("/history")

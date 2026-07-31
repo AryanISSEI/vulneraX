@@ -62,6 +62,10 @@ export const getScanHistory = async () => {
   return client.get('/history');
 };
 
+export const deleteScan = async (scanId) => {
+  return client.delete(`/scan/${scanId}`);
+};
+
 export const getReport = async (scanId, format) => {
   return client.get(`/report/${scanId}?format=${format}`, {
     responseType: format === 'json' ? 'json' : 'blob',
