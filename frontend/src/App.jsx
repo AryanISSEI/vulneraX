@@ -8,6 +8,7 @@ import Login from './pages/Login';
 import Register from './pages/Register';
 import Contact from './pages/Contact';
 import Users from './pages/Users';
+import Settings from './pages/Settings';
 import ParticleBackground from './components/ParticleBackground';
 
 import { ThemeProvider } from './components/ThemeProvider';
@@ -46,6 +47,7 @@ function MainLayout() {
                 <Route path="/history" element={<History />} />
                 <Route path="/contact" element={<Contact />} />
                 <Route path="/users" element={<Users />} />
+                <Route path="/settings" element={<Settings />} />
                 <Route path="*" element={<Navigate to="/" />} />
               </Routes>
             </motion.div>

@@ -32,6 +32,11 @@
     --ring: #06112c;
     
     --radius: 0.5rem;
+
+    --risk-critical: #ef4444;
+    --risk-high: #f97316;
+    --risk-medium: #eab308;
+    --risk-low: #10b981;
   }
 
   .dark {
@@ -61,6 +66,60 @@
     --risk-high: #ff7e00;
     --risk-medium: #facc15;
     --risk-low: #39ff14;
+  }
+
+  .midnight {
+    --background: #020617;
+    --foreground: #f8fafc;
+    --card: #0f172a;
+    --card-foreground: #f8fafc;
+    --popover: #0f172a;
+    --popover-foreground: #f8fafc;
+    --primary: #3b82f6;
+    --primary-foreground: #ffffff;
+    --secondary: #1e293b;
+    --secondary-foreground: #f8fafc;
+    --muted: #1e293b;
+    --muted-foreground: #94a3b8;
+    --accent: #3b82f6;
+    --accent-foreground: #ffffff;
+    --destructive: #ef4444;
+    --destructive-foreground: #ffffff;
+    --border: #334155;
+    --input: #1e293b;
+    --ring: #3b82f6;
+    
+    --risk-critical: #ef4444;
+    --risk-high: #f97316;
+    --risk-medium: #eab308;
+    --risk-low: #10b981;
+  }
+
+  .neon {
+    --background: #09090b;
+    --foreground: #fafafa;
+    --card: #18181b;
+    --card-foreground: #fafafa;
+    --popover: #18181b;
+    --popover-foreground: #fafafa;
+    --primary: #22d3ee;
+    --primary-foreground: #09090b;
+    --secondary: #27272a;
+    --secondary-foreground: #fafafa;
+    --muted: #27272a;
+    --muted-foreground: #a1a1aa;
+    --accent: #22d3ee;
+    --accent-foreground: #09090b;
+    --destructive: #f43f5e;
+    --destructive-foreground: #fafafa;
+    --border: #3f3f46;
+    --input: #27272a;
+    --ring: #22d3ee;
+    
+    --risk-critical: #f43f5e;
+    --risk-high: #fb923c;
+    --risk-medium: #facc15;
+    --risk-low: #4ade80;
   }
 
   .ocean {
@@ -138,6 +197,11 @@
   --color-border: var(--border);
   --color-input: var(--input);
   --color-ring: var(--ring);
+
+  --color-risk-critical: var(--risk-critical);
+  --color-risk-high: var(--risk-high);
+  --color-risk-medium: var(--risk-medium);
+  --color-risk-low: var(--risk-low);
 
   --radius-lg: var(--radius);
   --radius-md: calc(var(--radius) - 2px);
@@ -229,7 +293,7 @@
   border-radius: var(--radius);
 }
 .glass-nav {
-  background: rgba(0, 0, 0, 0.85);
+  background: color-mix(in srgb, var(--background) 85%, transparent);
   backdrop-filter: blur(12px);
   -webkit-backdrop-filter: blur(12px);
   border-bottom: 1px solid var(--border);
