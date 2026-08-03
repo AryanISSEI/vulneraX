@@ -173,7 +173,7 @@ export default function History() {
   };
 
   return (
-    <div className="w-full h-full p-8 flex flex-col space-y-6 glass-panel rounded-2xl border border-white/10 relative overflow-hidden">
+    <div className="w-full h-full p-8 flex flex-col space-y-6 glass-panel rounded-2xl border border-border relative overflow-hidden">
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 shrink-0">
         <div>
           <h1 className="text-3xl font-bold tracking-tight flex items-center gap-3">
@@ -415,8 +415,8 @@ export default function History() {
                             {v.type || 'Security Finding'}
                           </span>
                           <Badge className={
-                            v.severity === 'Critical' ? 'bg-red-500 text-white' :
-                            v.severity === 'High' ? 'bg-orange-500 text-white' : 'bg-amber-500 text-black'
+                            v.severity === 'Critical' ? 'bg-red-500 text-foreground' :
+                            v.severity === 'High' ? 'bg-orange-500 text-foreground' : 'bg-amber-500 text-black'
                           }>
                             {v.severity || 'Medium'} Severity
                           </Badge>

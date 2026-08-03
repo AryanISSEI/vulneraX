@@ -1,0 +1,9 @@
+__pycache__/
+*.pyc
+backend/python-bin/
+backend/uvicorn_error.log
+frontend/fix_theme.ps1
+reports/
+scans/VulneraX.db
+frontend/node_modules/
+.DS_Store

@@ -30,7 +30,7 @@ export default function RiskChart({ vulnerabilities }) {
           '#39ff14', // Low
           '#6b7280', // Info
         ],
-        pointBorderColor: 'rgba(255,255,255,0.8)',
+        pointBorderColor: 'rgba(128, 128, 128, 0.8)',
         pointHoverBackgroundColor: '#fff',
         pointHoverBorderColor: 'rgba(220, 38, 38, 1)',
         borderWidth: 2,
@@ -46,10 +46,10 @@ export default function RiskChart({ vulnerabilities }) {
     scales: {
       r: {
         angleLines: {
-          color: 'rgba(255, 255, 255, 0.1)'
+          color: 'rgba(128, 128, 128, 0.3)'
         },
         grid: {
-          color: 'rgba(255, 255, 255, 0.1)',
+          color: 'rgba(128, 128, 128, 0.3)',
           circular: true,
         },
         pointLabels: {

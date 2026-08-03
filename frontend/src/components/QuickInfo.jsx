@@ -19,15 +19,15 @@ export default function QuickInfo({ scanResult }) {
       icon: MapPin,
       label: 'Country',
       value: dns?.country || '—',
-      color: 'text-gray-300',
-      bg: 'bg-white/5',
+      color: 'text-muted-foreground',
+      bg: 'bg-foreground/5',
     },
     {
       icon: Server,
       label: 'Server',
       value: fingerprint?.server || '—',
-      color: 'text-gray-300',
-      bg: 'bg-white/5',
+      color: 'text-muted-foreground',
+      bg: 'bg-foreground/5',
     },
     {
       icon: Cpu,
@@ -35,8 +35,8 @@ export default function QuickInfo({ scanResult }) {
       value: fingerprint?.technologies?.length
         ? fingerprint.technologies.slice(0, 3).join(', ')
         : '—',
-      color: 'text-gray-300',
-      bg: 'bg-white/5',
+      color: 'text-muted-foreground',
+      bg: 'bg-foreground/5',
     },
     {
       icon: Network,

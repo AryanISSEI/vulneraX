@@ -9,8 +9,8 @@ export default function SectionHeader({ eyebrow, title, description, action = nu
             {eyebrow}
           </p>
         ) : null}
-        <h2 className="text-lg font-semibold text-white">{title}</h2>
-        {description ? <p className="mt-1 text-sm text-slate-400">{description}</p> : null}
+        <h2 className="text-lg font-semibold text-foreground">{title}</h2>
+        {description ? <p className="mt-1 text-sm text-muted-foreground">{description}</p> : null}
       </div>
       {action}
     </div>

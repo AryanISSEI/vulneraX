@@ -66,7 +66,7 @@ export default function PortTable({ ports }) {
                   <div className={`w-10 h-10 rounded-full border bg-black flex items-center justify-center transition-transform hover:scale-125 ${isRisky ? 'border-destructive' : 'border-green-500/50'}`}>
                     <span className={`text-[10px] font-bold font-mono ${textColor}`}>{port.port}</span>
                   </div>
-                  <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black border border-white/10 px-2 py-1 rounded text-[10px] font-mono whitespace-nowrap z-30 shadow-xl pointer-events-none">
+                  <div className="absolute top-full mt-2 left-1/2 -translate-x-1/2 opacity-0 group-hover:opacity-100 transition-opacity bg-black border border-border px-2 py-1 rounded text-[10px] font-mono whitespace-nowrap z-30 shadow-xl pointer-events-none">
                     <span className={textColor}>{port.service || 'unknown'}</span>
                   </div>
                 </div>
@@ -92,10 +92,10 @@ export default function PortTable({ ports }) {
               {ports.map((port, i) => {
                  const isRisky = [21, 23, 445, 3389].includes(port.port);
                  return (
-                <tr key={`${port.port}-${i}`} className="group hover:bg-white/5 transition-colors">
+                <tr key={`${port.port}-${i}`} className="group hover:bg-foreground/5 transition-colors">
                   <td className="px-4 py-3 font-mono font-bold text-primary">{port.port}</td>
                   <td className="px-4 py-3">
-                    <div className="font-mono text-xs text-white flex items-center gap-2">
+                    <div className="font-mono text-xs text-foreground flex items-center gap-2">
                       <Wifi className="h-3 w-3 text-muted-foreground" />
                       {port.service || 'unknown'}
                     </div>

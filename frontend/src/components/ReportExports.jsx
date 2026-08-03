@@ -14,13 +14,13 @@ export default function ReportExports() {
       <SectionHeader eyebrow="Reporting" title="Export Assessments" description="Generate polished deliverables in one click." />
       <div className="mt-6 grid gap-4 md:grid-cols-2">
         {cards.map(({ label, description, icon: Icon }) => (
-          <div key={label} className="rounded-2xl border border-white/10 bg-slate-950/60 p-5">
-            <div className="flex items-center gap-3 text-white">
+          <div key={label} className="rounded-2xl border border-border bg-card/60 p-5">
+            <div className="flex items-center gap-3 text-foreground">
               <Icon className="h-5 w-5 text-cyan-300" />
               <h3 className="font-medium">{label}</h3>
             </div>
-            <p className="mt-2 text-sm text-slate-400">{description}</p>
-            <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-white/5 px-4 py-2 text-sm text-cyan-300 ring-1 ring-white/10">
+            <p className="mt-2 text-sm text-muted-foreground">{description}</p>
+            <button className="mt-4 inline-flex items-center gap-2 rounded-xl bg-foreground/5 px-4 py-2 text-sm text-cyan-300 ring-1 ring-white/10">
               <Download className="h-4 w-4" />
               Download
             </button>

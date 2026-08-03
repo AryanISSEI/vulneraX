@@ -20,7 +20,7 @@ export default function Settings() {
   const themes = [
     { id: 'light', name: 'Cyber Classic', color: 'bg-white', border: 'border-slate-200' },
     { id: 'dark', name: 'Flat Crimson', color: 'bg-black', border: 'border-red-600' },
-    { id: 'midnight', name: 'Midnight Blue', color: 'bg-slate-950', border: 'border-blue-600' },
+    { id: 'midnight', name: 'Midnight Blue', color: 'bg-card', border: 'border-blue-600' },
     { id: 'neon', name: 'Neon Pulse', color: 'bg-zinc-950', border: 'border-cyan-400' },
     { id: 'ocean', name: 'Ocean Depth', color: 'bg-slate-900', border: 'border-sky-500' },
     { id: 'sunset', name: 'Cyber Sunset', color: 'bg-[#2a1b18]', border: 'border-rose-500' }

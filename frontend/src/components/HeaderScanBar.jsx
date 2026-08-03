@@ -32,29 +32,29 @@ export default function HeaderScanBar({ onScan, isScanning }) {
       <div className="flex items-end justify-between gap-4">
         <div>
           <p className="text-[11px] font-semibold uppercase tracking-[0.24em] text-cyan-300">Command Center</p>
-          <h1 className="mt-2 text-3xl font-semibold text-white">AI-Powered Security Assessment Platform</h1>
-          <p className="mt-2 max-w-3xl text-sm text-slate-400">
+          <h1 className="mt-2 text-3xl font-semibold text-foreground">AI-Powered Security Assessment Platform</h1>
+          <p className="mt-2 max-w-3xl text-sm text-muted-foreground">
             Launch scans, monitor assessment progress, review vulnerabilities, and export actionable reports from one
             high-signal workspace.
           </p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-[28px] border border-white/10 bg-white/5 p-4 backdrop-blur-xl">
+      <form onSubmit={handleSubmit} className="rounded-[28px] border border-border bg-foreground/5 p-4 backdrop-blur-xl">
         <div className="grid gap-3 xl:grid-cols-[1fr_240px_auto]">
           <input
             type="text"
             value={target}
             onChange={(event) => setTarget(event.target.value)}
             placeholder="Enter IP or Domain, e.g., target.example.com"
-            className="h-14 rounded-2xl border border-white/10 bg-slate-950/70 px-4 text-sm text-white outline-none ring-0 placeholder:text-slate-500"
+            className="h-14 rounded-2xl border border-border bg-card/70 px-4 text-sm text-foreground outline-none ring-0 placeholder:text-muted-foreground"
             disabled={isScanning}
           />
 
           <select
             value={mode}
             onChange={(event) => setMode(event.target.value)}
-            className="h-14 rounded-2xl border border-white/10 bg-slate-950/70 px-4 text-sm text-slate-200 outline-none"
+            className="h-14 rounded-2xl border border-border bg-card/70 px-4 text-sm text-foreground outline-none"
             disabled={isScanning}
           >
             {modes.map((item) => (
@@ -74,7 +74,7 @@ export default function HeaderScanBar({ onScan, isScanning }) {
           </button>
         </div>
 
-        <label className="mt-4 flex items-start gap-3 text-sm text-slate-400">
+        <label className="mt-4 flex items-start gap-3 text-sm text-muted-foreground">
           <input type="checkbox" checked={authorized} onChange={(event) => setAuthorized(event.target.checked)} />
           I confirm I have explicit authorization to assess this target.
         </label>

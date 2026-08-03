@@ -108,14 +108,14 @@ export default function ScanForm({ onScan, isScanning }) {
         <div className="relative flex-1">
           <div className="absolute inset-0 bg-primary/20 blur-xl rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
-          <div className="relative flex items-center bg-black/60 border-2 border-white/10 hover:border-primary/50 focus-within:border-primary rounded-2xl px-4 py-2 backdrop-blur-xl transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] focus-within:shadow-[0_0_30px_rgba(0,240,255,0.2)]">
+          <div className="relative flex items-center bg-black/60 border-2 border-border hover:border-primary/50 focus-within:border-primary rounded-2xl px-4 py-2 backdrop-blur-xl transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] focus-within:shadow-[0_0_30px_rgba(0,240,255,0.2)]">
             <Target className="h-6 w-6 text-primary animate-pulse" />
             <input
               type="text"
               value={target}
               onChange={(e) => setTarget(e.target.value)}
               placeholder="ENTER TARGET DOMAIN OR IP..."
-              className="w-full bg-transparent border-none outline-none text-white px-4 py-4 font-mono text-lg placeholder:text-white/30 tracking-widest"
+              className="w-full bg-transparent border-none outline-none text-foreground px-4 py-4 font-mono text-lg placeholder:text-foreground/30 tracking-widest"
               disabled={shattered}
             />
           </div>
@@ -127,7 +127,7 @@ export default function ScanForm({ onScan, isScanning }) {
           className={`relative overflow-hidden rounded-2xl px-10 py-4 font-bold tracking-widest uppercase transition-all duration-300 ${
             target.trim() && !shattered
               ? 'bg-primary text-black hover:scale-105 shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:shadow-[0_0_40px_rgba(0,240,255,0.6)]' 
-              : 'bg-white/5 text-white/50 border border-white/10'
+              : 'bg-foreground/5 text-foreground/50 border border-border'
           }`}
         >
           {shattered ? (
@@ -146,7 +146,7 @@ export default function ScanForm({ onScan, isScanning }) {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center animate-in fade-in zoom-in duration-500 delay-500">
             <h3 className="text-primary font-mono tracking-[0.5em] text-sm mb-2 opacity-80">INITIALIZING CRAWLER</h3>
-            <p className="text-white text-2xl font-extrabold tracking-wider filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+            <p className="text-foreground text-2xl font-extrabold tracking-wider filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
               {target}
             </p>
           </div>
