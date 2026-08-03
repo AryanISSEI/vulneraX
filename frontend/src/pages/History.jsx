@@ -125,7 +125,10 @@ export default function History() {
   };
 
   // Helper to build AI Exploit Chain & Reasoning
-  const buildAIReasoning = (results) => {
+  const buildAIReasoning = (results, status) => {
+    if (status === 'aborted' || results?.status === 'aborted') {
+      return "This security scan was aborted by the user before completion. Complete vulnerability detection and AI exploit reasoning could not be conducted for this target.";
+    }
     if (!results) return "Scan results pending or uninitialized.";
     const vulns = results.vulnerabilities || [];
     const headers = results.headers || {};
@@ -233,7 +236,7 @@ export default function History() {
               </TableHeader>
               <TableBody as={motion.tbody} variants={container} initial="hidden" animate="show">
                 {filtered.map((scan) => {
-                  const scoreInfo = riskScoreColor(scan.risk_score);
+                  const scoreInfo = riskScoreColor(scan.risk_score, scan.status);
                   return (
                     <TableRow key={scan.scan_id} as={motion.tr} variants={item} className="hover:bg-secondary/40 transition-colors">
                       <TableCell className="font-medium font-mono text-primary flex items-center gap-2">
@@ -246,10 +249,24 @@ export default function History() {
                       <TableCell>
                         <Badge
                           variant={scan.status === 'error' ? 'destructive' : 'outline'}
-                          className={scan.status === 'completed' ? 'bg-emerald-500/10 text-emerald-500 border-none' : ''}
+                          className={
+                            scan.status === 'completed'
+                              ? 'bg-emerald-500/10 text-emerald-500 border-none'
+                              : scan.status === 'aborted'
+                              ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
+                              : scan.status === 'error'
+                              ? 'bg-destructive/10 text-destructive border-none'
+                              : 'bg-amber-500/10 text-amber-400'
+                          }
                         >
                           <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
-                            scan.status === 'completed' ? 'bg-emerald-500' : scan.status === 'error' ? 'bg-destructive' : 'bg-amber-500 animate-pulse'
+                            scan.status === 'completed'
+                              ? 'bg-emerald-500'
+                              : scan.status === 'aborted'
+                              ? 'bg-rose-500'
+                              : scan.status === 'error'
+                              ? 'bg-destructive'
+                              : 'bg-amber-500 animate-pulse'
                           }`} />
                           {scan.status}
                         </Badge>
@@ -257,7 +274,7 @@ export default function History() {
                       <TableCell>
                         <div className="flex items-center gap-2">
                           <span className="text-sm font-bold" style={{ color: scoreInfo.color }}>
-                            {scan.risk_score}/100
+                            {scan.status === 'aborted' ? 'Aborted' : scan.status === 'error' ? 'N/A' : `${scan.risk_score}/100`}
                           </span>
                           <span className="text-[10px] text-muted-foreground">({scoreInfo.label})</span>
                         </div>
@@ -384,11 +401,11 @@ export default function History() {
                       AI Threat Chain & Exploit Reasoning
                     </span>
                     <Badge variant="outline" className="font-bold text-xs">
-                      Risk Score: {selectedScanReport.risk_score}/100
+                      Risk Score: {selectedScanReport.status === 'aborted' ? 'Aborted' : selectedScanReport.status === 'error' ? 'N/A' : `${selectedScanReport.risk_score}/100`}
                     </Badge>
                   </div>
                   <p className="text-sm leading-relaxed text-foreground">
-                    {buildAIReasoning(selectedScanReport.results)}
+                    {buildAIReasoning(selectedScanReport.results, selectedScanReport.status)}
                   </p>
                 </div>
 
@@ -399,7 +416,12 @@ export default function History() {
                     Detected Findings & Concrete Patch Suggestions
                   </h3>
 
-                  {(!selectedScanReport.results?.vulnerabilities || selectedScanReport.results.vulnerabilities.length === 0) ? (
+                  {selectedScanReport.status === 'aborted' ? (
+                    <div className="p-6 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center text-sm text-rose-300">
+                      <AlertTriangle className="h-8 w-8 text-rose-400 mx-auto mb-2" />
+                      This scan was aborted by the user before vulnerability testing could be completed.
+                    </div>
+                  ) : (!selectedScanReport.results?.vulnerabilities || selectedScanReport.results.vulnerabilities.length === 0) ? (
                     <div className="p-6 rounded-xl bg-card border border-border text-center text-sm text-muted-foreground">
                       <CheckCircle className="h-8 w-8 text-emerald-500 mx-auto mb-2" />
                       No critical vulnerabilities detected on this target.

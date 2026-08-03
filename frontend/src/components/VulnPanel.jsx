@@ -45,7 +45,7 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
               <th className="pb-3 px-2 font-mono text-[10px] uppercase tracking-widest">Target Endpoint</th>
               <th className="pb-3 px-2 font-mono text-[10px] uppercase tracking-widest">Type</th>
               <th className="pb-3 px-2 font-mono text-[10px] uppercase tracking-widest">Severity</th>
-              <th className="pb-3 px-2 font-mono text-[10px] uppercase tracking-widest">Actions</th>
+              <th className="pb-3 px-2 font-mono text-[10px] uppercase tracking-widest">Remediation</th>
             </tr>
           </thead>
           <tbody>
@@ -71,9 +71,9 @@ export default function VulnPanel({ vulnerabilities = [], onSelectVuln }) {
                   <td className="py-4 px-2">
                     <button 
                       onClick={() => onSelectVuln?.(item)}
-                      className="rounded-lg bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary px-3 py-1.5 text-[10px] font-bold tracking-widest text-primary hover:text-foreground transition-all font-mono uppercase"
+                      className="inline-flex items-center gap-1.5 rounded-lg bg-primary/10 hover:bg-primary border border-primary/20 hover:border-primary px-3 py-1.5 text-[10px] font-bold tracking-widest text-primary hover:text-foreground transition-all font-mono uppercase shadow-sm"
                     >
-                      Oracle
+                      Remediate
                     </button>
                   </td>
                 </tr>

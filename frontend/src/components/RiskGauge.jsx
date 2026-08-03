@@ -4,12 +4,12 @@ import { Gauge } from 'lucide-react';
 import GlassCard from './ui/GlassCard';
 import SectionHeader from './ui/SectionHeader';
 
-export default function RiskGauge({ score }) {
+export default function RiskGauge({ score, status }) {
   const canvasRef = useRef(null);
   const animatedScore = useRef(0);
   const animFrameRef = useRef(null);
 
-  const info = riskScoreColor(score ?? 100);
+  const info = riskScoreColor(score ?? 0, status);
 
   useEffect(() => {
     const canvas = canvasRef.current;
@@ -32,7 +32,7 @@ export default function RiskGauge({ score }) {
     const startAngle = Math.PI;
     const endAngle = 2 * Math.PI;
 
-    const targetScore = score ?? 100;
+    const targetScore = status === 'aborted' ? 0 : (score ?? 100);
 
     function draw(currentScore) {
       ctx.clearRect(0, 0, size, size);
@@ -56,7 +56,7 @@ export default function RiskGauge({ score }) {
 
       ctx.beginPath();
       ctx.arc(cx, cy, radius, startAngle, scoreAngle);
-      ctx.strokeStyle = gradient;
+      ctx.strokeStyle = status === 'aborted' ? '#f43f5e' : gradient;
       ctx.lineWidth = lineWidth;
       ctx.lineCap = 'round';
       ctx.stroke();
@@ -71,10 +71,17 @@ export default function RiskGauge({ score }) {
 
       // Score text
       ctx.fillStyle = info.color;
-      ctx.font = 'bold 36px Inter, sans-serif';
-      ctx.textAlign = 'center';
-      ctx.textBaseline = 'middle';
-      ctx.fillText(Math.round(currentScore), cx, cy - 8);
+      if (status === 'aborted') {
+        ctx.font = 'bold 22px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('ABORTED', cx, cy - 8);
+      } else {
+        ctx.font = 'bold 36px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText(Math.round(currentScore), cx, cy - 8);
+      }
 
       // Label
       ctx.fillStyle = '#94a3b8';
@@ -106,7 +113,7 @@ export default function RiskGauge({ score }) {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [score, info.color]);
+  }, [score, status, info.color]);
 
   return (
     <GlassCard className="flex flex-col items-center flex-1 w-full h-full p-6">

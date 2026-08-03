@@ -83,15 +83,17 @@ def _safe_report_basename(filepath: str) -> str:
 
 
 async def save_partial_results(result: ScanResult):
+    risk_score_val = 0 if result.status in ("aborted", "error") else (result.risk_score.overall if result.risk_score else 100)
     await update_scan_results(
         result.scan_id,
         result.model_dump_json(),
-        result.risk_score.overall if result.risk_score else 100,
+        risk_score_val,
         result.status
     )
 
 
 _ABORTED_SCANS = set()
+_RUNNING_TASKS: dict[str, asyncio.Task] = {}
 
 
 async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
@@ -103,19 +105,18 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         status="running",
     )
 
-    def check_aborted():
+    async def check_and_handle_aborted() -> bool:
         if scan_id in _ABORTED_SCANS:
+            result.status = "aborted"
+            result.error = "Scan aborted by user"
+            result.current_phase = "Aborted"
+            await save_partial_results(result)
             return True
         return False
 
     try:
         # Phase 1: DNS Lookup
-        if check_aborted():
-            result.status = "error"
-            result.error = "Scan aborted by user"
-            result.current_phase = "Aborted"
-            await save_partial_results(result)
-            return
+        if await check_and_handle_aborted(): return
 
         result.current_phase = "DNS Lookup"
         await update_scan_status(scan_id, "running", "DNS Lookup")
@@ -126,12 +127,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         await save_partial_results(result)
 
         # Phase 2: Port Scanning
-        if check_aborted():
-            result.status = "error"
-            result.error = "Scan aborted by user"
-            result.current_phase = "Aborted"
-            await save_partial_results(result)
-            return
+        if await check_and_handle_aborted(): return
         result.current_phase = "Port Scanning"
         await update_scan_status(scan_id, "running", "Port Scanning")
         ip = result.dns.ip_address if result.dns else target
@@ -152,6 +148,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
             try:
                 result.ports = await scan_ports(ip)
                 for port_result in result.ports:
+                    if await check_and_handle_aborted(): return
                     if not port_result.banner:
                         try:
                             banner = await grab_banner(ip, port_result.port)
@@ -164,6 +161,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         await save_partial_results(result)
 
         # Phase 3: Website Fingerprinting
+        if await check_and_handle_aborted(): return
         result.current_phase = "Fingerprinting"
         await update_scan_status(scan_id, "running", "Fingerprinting")
         try:
@@ -173,6 +171,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         await save_partial_results(result)
 
         # Phase 4: Security Headers
+        if await check_and_handle_aborted(): return
         result.current_phase = "Checking Headers"
         await update_scan_status(scan_id, "running", "Checking Headers")
         try:
@@ -182,6 +181,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         await save_partial_results(result)
 
         # Phase 5: Cookie Analysis
+        if await check_and_handle_aborted(): return
         result.current_phase = "Analyzing Cookies"
         await update_scan_status(scan_id, "running", "Analyzing Cookies")
         try:
@@ -191,6 +191,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         await save_partial_results(result)
 
         # Phase 6: SSL Scan
+        if await check_and_handle_aborted(): return
         result.current_phase = "SSL Scan"
         await update_scan_status(scan_id, "running", "SSL Scan")
         try:
@@ -200,6 +201,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         await save_partial_results(result)
 
         # Phase 7: Crawling
+        if await check_and_handle_aborted(): return
         result.current_phase = "Crawling Website"
         await update_scan_status(scan_id, "running", "Crawling Website")
         crawl_data = {"urls": [], "forms": [], "params": []}
@@ -212,6 +214,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         await save_partial_results(result)
 
         # Phase 8: Vulnerability Tests
+        if await check_and_handle_aborted(): return
         result.current_phase = "Testing Vulnerabilities"
         await update_scan_status(scan_id, "running", "Testing Vulnerabilities")
 
@@ -224,12 +227,15 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         ]
 
         vuln_results = await asyncio.gather(*vuln_tasks, return_exceptions=True)
+        if await check_and_handle_aborted(): return
+
         for vr in vuln_results:
             if isinstance(vr, list):
                 result.vulnerabilities.extend(vr)
         await save_partial_results(result)
 
         # Phase 9: Calculate Risk Score
+        if await check_and_handle_aborted(): return
         result.current_phase = "Calculating Risk Score"
         await update_scan_status(scan_id, "running", "Calculating Risk Score")
         result.risk_score = calculate_risk_score(
@@ -239,16 +245,20 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
             result.ssl,
         )
 
+        if await check_and_handle_aborted(): return
+
         # Done
         result.status = "completed"
         result.current_phase = "Completed"
         await save_partial_results(result)
 
-    except Exception as e:
-        result.status = "error"
-        result.error = str(e)
-        result.current_phase = "Error"
+    except (asyncio.CancelledError, Exception) as e:
+        result.status = "aborted" if (scan_id in _ABORTED_SCANS or isinstance(e, asyncio.CancelledError)) else "error"
+        result.error = "Scan aborted by user" if result.status == "aborted" else str(e)
+        result.current_phase = "Aborted" if result.status == "aborted" else "Error"
         await save_partial_results(result)
+    finally:
+        _RUNNING_TASKS.pop(scan_id, None)
 
 
 @router.post("/scan", response_model=ScanResponse)
@@ -272,8 +282,9 @@ async def start_scan(request: ScanRequest, req: Request, background_tasks: Backg
     timestamp = datetime.now(timezone.utc).isoformat()
     await save_scan(scan_id, target, timestamp, "pending", user_id=user_id)
 
-    # Start scan via BackgroundTasks
-    background_tasks.add_task(run_scan_logic, scan_id, target, user_id)
+    # Start scan task and track reference
+    task = asyncio.create_task(run_scan_logic(scan_id, target, user_id))
+    _RUNNING_TASKS[scan_id] = task
 
     return ScanResponse(
         scan_id=scan_id,
@@ -314,13 +325,27 @@ async def get_scan_results(scan_id: str, user_id: int = Depends(get_current_user
 
 @router.post("/scan/{scan_id}/abort")
 async def abort_scan(scan_id: str, user_id: int = Depends(get_current_user)):
-    """Abort an ongoing security scan."""
+    """Abort an ongoing security scan immediately."""
     scan = await get_scan(scan_id)
     if not scan or scan.get("user_id") != user_id:
         raise HTTPException(status_code=404, detail="Scan not found")
         
     _ABORTED_SCANS.add(scan_id)
-    await update_scan_status(scan_id, "error", "Aborted by user")
+    task = _RUNNING_TASKS.pop(scan_id, None)
+    if task and not task.done():
+        task.cancel()  # Cancel task immediately in event loop
+
+    await update_scan_status(scan_id, "aborted", "Aborted by user")
+    
+    try:
+        data = json.loads(scan.get("results_json", "{}"))
+        data["status"] = "aborted"
+        data["error"] = "Scan aborted by user"
+        data["current_phase"] = "Aborted"
+        await update_scan_results(scan_id, json.dumps(data), 0, "aborted")
+    except Exception:
+        pass
+
     return {"scan_id": scan_id, "status": "aborted", "message": "Scan aborted successfully"}
 
 
@@ -349,7 +374,7 @@ async def get_scan_history(user_id: int = Depends(get_current_user)):
                 target=s["target"],
                 timestamp=s["timestamp"],
                 status=s["status"],
-                risk_score=s.get("risk_score", 100),
+                risk_score=s.get("risk_score", 100) if s["status"] not in ("aborted", "error") else 0,
             ).model_dump()
             for s in scans
         ]
@@ -369,8 +394,8 @@ async def get_report(scan_id: str, format: str = "json", user_id: int = Depends(
     except Exception:
         raise HTTPException(status_code=500, detail="Failed to parse scan data")
 
-    if scan_result.status != "completed":
-        raise HTTPException(status_code=400, detail="Scan is not completed yet")
+    if scan_result.status not in ("completed", "aborted", "error"):
+        raise HTTPException(status_code=400, detail="Scan is still in progress")
 
     if format == "json":
         filepath = generate_json_report(scan_result)

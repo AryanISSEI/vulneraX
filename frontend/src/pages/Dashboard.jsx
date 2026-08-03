@@ -49,13 +49,20 @@ export default function Dashboard() {
     }
 
     setIsScanning(false);
-    setScanStatus('error');
+    setScanStatus('aborted');
     setError('Scan aborted by user.');
+
+    if (scanId) {
+      try {
+        const { data: results } = await getScanResults(scanId);
+        if (results) setScanResult(results);
+      } catch (err) {}
+    }
 
     localStorage.setItem('vulnerax_active_scan', JSON.stringify({
       target: targetDomain,
       scanId: scanId,
-      scanStatus: 'error',
+      scanStatus: 'aborted',
       currentPhase: 'Aborted',
       error: 'Scan aborted by user'
     }));
@@ -82,12 +89,15 @@ export default function Dashboard() {
           if (data && data.target) {
             setScanResult(data);
             setScanId(queryScanId);
-            setScanStatus('completed');
+            setScanStatus(data.status || 'completed');
             setTargetDomain(data.target);
+            if (data.status === 'aborted') {
+              setError('Scan aborted by user.');
+            }
             localStorage.setItem('vulnerax_active_scan', JSON.stringify({
               target: data.target,
               scanId: queryScanId,
-              scanStatus: 'completed',
+              scanStatus: data.status || 'completed',
               scanResult: data
             }));
           }
@@ -100,12 +110,12 @@ export default function Dashboard() {
           const data = JSON.parse(saved);
           if (data.target) setTargetDomain(data.target);
           if (data.scanId) setScanId(data.scanId);
+          if (data.scanStatus) setScanStatus(data.scanStatus);
           if (data.scanResult) {
             setScanResult(data.scanResult);
-            setScanStatus('completed');
-          } else if (data.scanId && data.scanStatus === 'running') {
+          } else if (data.scanId && (data.scanStatus === 'running' || data.scanStatus === 'pending')) {
             setIsScanning(true);
-            setScanStatus('running');
+            setScanStatus(data.scanStatus);
             setCurrentPhase(data.currentPhase || 'Resuming scan...');
             startPolling(data.scanId, data.target);
           }
@@ -149,6 +159,17 @@ export default function Dashboard() {
             scanStatus: 'completed',
             scanResult: results,
           }));
+        } else if (status.status === 'aborted') {
+          clearInterval(pollRef.current);
+          pollRef.current = null;
+          setError('Scan aborted by user.');
+          setIsScanning(false);
+          setScanStatus('aborted');
+
+          try {
+            const { data: results } = await getScanResults(id);
+            if (results) setScanResult(results);
+          } catch (e) {}
         } else if (status.status === 'error') {
           clearInterval(pollRef.current);
           pollRef.current = null;
@@ -238,9 +259,13 @@ export default function Dashboard() {
                 <span className={`ml-2 px-3 py-1 text-xs font-semibold rounded-full border ${
                   isScanning
                     ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse'
+                    : scanStatus === 'aborted'
+                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                    : scanStatus === 'error'
+                    ? 'bg-destructive/10 text-destructive border-destructive/20'
                     : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
                 }`}>
-                  {isScanning ? 'Scan in Progress' : 'Scan Completed'}
+                  {isScanning ? 'Scan in Progress' : scanStatus === 'aborted' ? 'Scan Aborted' : scanStatus === 'error' ? 'Scan Error' : 'Scan Completed'}
                 </span>
               </div>
 
@@ -320,7 +345,7 @@ export default function Dashboard() {
                     <QuickInfo scanResult={scanResult} />
                   </div>
                   <div className="md:col-span-1 xl:col-span-1 flex flex-col min-h-0 gsap-stagger-item perspective-[1000px]">
-                    <RiskGauge score={scanResult?.risk_score?.overall} />
+                    <RiskGauge score={scanResult?.risk_score?.overall} status={scanResult?.status || scanStatus} />
                   </div>
                   <div className="md:col-span-2 xl:col-span-3 flex flex-col min-h-0 gsap-stagger-item perspective-[1000px]">
                     <RiskChart vulnerabilities={scanResult?.vulnerabilities || []} />

@@ -4,8 +4,8 @@ import { riskScoreColor } from '../utils/helpers';
 export default function QuickInfo({ scanResult }) {
   if (!scanResult) return null;
 
-  const { dns, fingerprint, ports, risk_score } = scanResult;
-  const scoreInfo = riskScoreColor(risk_score?.overall ?? 100);
+  const { dns, fingerprint, ports, risk_score, status } = scanResult;
+  const scoreInfo = riskScoreColor(risk_score?.overall ?? 0, status);
 
   const cards = [
     {
@@ -48,7 +48,7 @@ export default function QuickInfo({ scanResult }) {
     {
       icon: Shield,
       label: 'Risk Score',
-      value: `${risk_score?.overall ?? 100}/100`,
+      value: status === 'aborted' ? 'Aborted' : status === 'error' ? 'N/A' : `${risk_score?.overall ?? 100}/100`,
       color: '',
       bg: '',
       customColor: scoreInfo.color,

@@ -14,7 +14,7 @@ const PHASES = [
 ];
 
 export default function ScanProgress({ status, currentPhase, onAbort }) {
-  if (!status || status === 'completed' || status === 'error') return null;
+  if (!status || status === 'completed' || status === 'error' || status === 'aborted') return null;
 
   const currentIndex = PHASES.findIndex(
     (p) => currentPhase?.toLowerCase().includes(p.toLowerCase())

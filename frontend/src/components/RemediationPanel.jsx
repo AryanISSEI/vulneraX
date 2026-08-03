@@ -4,6 +4,28 @@ import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
 
+const getRemediationSnippet = (vuln) => {
+  const name = (vuln?.name || '').toLowerCase();
+  const category = (vuln?.category || '').toLowerCase();
+
+  if (name.includes('xss') || category.includes('xss')) {
+    return `// 1. Content Security Policy (CSP) Header\nHeader set Content-Security-Policy "default-src 'self'; script-src 'self';"\n\n// 2. Output Encoding in Application Code\nconst safeOutput = DOMPurify.sanitize(userInput);\nelement.innerText = safeOutput;`;
+  }
+  if (name.includes('sqli') || name.includes('sql') || category.includes('sqli')) {
+    return `// 1. Parameterized Query (Python SQLAlchemy)\nstmt = select(User).where(User.username == bindparam('username'))\n\n// 2. Prepared Statement (Node.js PG / PostgreSQL)\nconst result = await db.query('SELECT * FROM users WHERE id = $1', [userId]);`;
+  }
+  if (name.includes('traversal') || category.includes('traversal')) {
+    return `// Secure File Path Resolution (Python)\nimport os\n\nbase_dir = os.path.abspath("/var/www/uploads")\nrequested_path = os.path.abspath(os.path.join(base_dir, filename))\n\nif not requested_path.startswith(base_dir):\n    raise PermissionError("Directory Traversal Attempt Blocked")`;
+  }
+  if (name.includes('sensitive') || name.includes('.env') || name.includes('.git') || category.includes('sensitive')) {
+    return `# Nginx Access Restriction Rule\nlocation ~ /\\.(env|git|htaccess|config) {\n    deny all;\n    return 404;\n}`;
+  }
+  if (name.includes('redirect') || category.includes('redirect')) {
+    return `// Validate Redirect URLs against a Trusted Whitelist\nconst allowedDomains = ['example.com', 'auth.example.com'];\nconst targetUrl = new URL(userProvidedRedirect);\n\nif (!allowedDomains.includes(targetUrl.hostname)) {\n    throw new Error("Untrusted Redirect Target");\n}`;
+  }
+  return `// Standard Security Remediation Best Practices:\n// 1. Validate and sanitize all incoming client parameters.\n// 2. Enforce Strict Transport Security (HSTS) and HTTPS TLS 1.3.\n// 3. Principle of Least Privilege for API/Database credentials.`;
+};
+
 export default function RemediationPanel({ vulnerability, onClose }) {
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
@@ -20,6 +42,8 @@ export default function RemediationPanel({ vulnerability, onClose }) {
     setCopied(true);
     setTimeout(() => setCopied(false), 2000);
   };
+
+  const patchCode = getRemediationSnippet(vulnerability);
 
   // Custom components for ReactMarkdown to style code blocks
   const components = {
@@ -74,7 +98,7 @@ export default function RemediationPanel({ vulnerability, onClose }) {
           <div className="px-6 py-5 border-b border-border bg-black/40 flex items-center justify-between shrink-0">
             <div className="flex items-center gap-3">
               <ShieldCheck className="h-6 w-6 text-primary animate-pulse" />
-              <h2 className="font-bold text-lg text-foreground font-mono uppercase tracking-wider">Oracle Analysis</h2>
+              <h2 className="font-bold text-lg text-foreground font-mono uppercase tracking-wider">AI Remediation & Patch Analysis</h2>
             </div>
             <button 
               onClick={onClose}
@@ -85,8 +109,8 @@ export default function RemediationPanel({ vulnerability, onClose }) {
           </div>
 
           {/* Content */}
-          <div className="flex-1 overflow-auto p-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent">
-            <div className="mb-8">
+          <div className="flex-1 overflow-auto p-6 scrollbar-thin scrollbar-thumb-white/10 scrollbar-track-transparent space-y-6">
+            <div>
               <div className="inline-flex items-center gap-2 px-3 py-1 rounded-full bg-destructive/10 border border-destructive/20 text-destructive text-xs font-mono font-bold uppercase tracking-widest mb-4 shadow-[0_0_10px_rgba(255,0,60,0.2)]">
                 <AlertTriangle className="h-3 w-3" />
                 {vulnerability.severity} Risk
@@ -95,20 +119,47 @@ export default function RemediationPanel({ vulnerability, onClose }) {
               <p className="text-muted-foreground font-mono text-sm break-all">{vulnerability.url || vulnerability.endpoint}</p>
             </div>
 
+            {vulnerability.description && (
+              <div className="p-4 rounded-xl bg-secondary/30 border border-border/50 text-sm text-foreground space-y-1">
+                <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-muted-foreground block">Vulnerability Description</span>
+                <p>{vulnerability.description}</p>
+              </div>
+            )}
+
             <div className="prose prose-invert prose-p:text-muted-foreground prose-headings:text-foreground max-w-none">
+              <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-primary block mb-2">Recommended Guidance</span>
               {vulnerability.recommendation ? (
                  <ReactMarkdown components={components}>
                    {vulnerability.recommendation}
                  </ReactMarkdown>
               ) : (
                 <div className="p-4 bg-foreground/5 rounded-lg border border-border">
-                  <p className="text-muted-foreground text-sm font-mono italic">No remediation data provided by AI Oracle.</p>
+                  <p className="text-muted-foreground text-sm font-mono italic">Implement strict input validation, contextual output encoding, and enforce least-privilege security policies.</p>
                 </div>
               )}
             </div>
+
+            {/* Code Patch Suggestion */}
+            <div className="space-y-2 pt-2">
+              <div className="flex items-center justify-between">
+                <span className="text-xs font-bold font-mono uppercase tracking-wider text-emerald-400">
+                  Remediation & Patch Code Snippet
+                </span>
+                <button
+                  onClick={() => handleCopy(patchCode)}
+                  className="flex items-center gap-1 text-[11px] font-mono text-muted-foreground hover:text-foreground"
+                >
+                  {copied ? <CheckCircle2 className="h-3 w-3 text-emerald-400" /> : <Copy className="h-3 w-3" />}
+                  {copied ? 'COPIED' : 'COPY PATCH'}
+                </button>
+              </div>
+              <pre className="p-4 rounded-xl bg-black/90 text-emerald-400 font-mono text-xs overflow-x-auto border border-emerald-500/20 leading-relaxed shadow-inner">
+                <code>{patchCode}</code>
+              </pre>
+            </div>
             
-            <div className="mt-8 pt-8 border-t border-border">
-              <h3 className="text-sm font-bold text-foreground uppercase tracking-widest mb-4 flex items-center gap-2">
+            <div className="pt-4 border-t border-border">
+              <h3 className="text-xs font-bold text-foreground uppercase tracking-widest mb-3 flex items-center gap-2">
                 <span className="w-1.5 h-1.5 bg-primary rounded-full animate-pulse" />
                 Evidence Payload
               </h3>

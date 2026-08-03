@@ -24,7 +24,13 @@ export const headerStatusColor = (present, isWeak) => {
 /**
  * Risk score to color gradient
  */
-export const riskScoreColor = (score) => {
+export const riskScoreColor = (score, status) => {
+  if (status === 'aborted') {
+    return { color: '#f43f5e', label: 'Aborted' };
+  }
+  if (status === 'error') {
+    return { color: '#ef4444', label: 'Error' };
+  }
   if (score >= 80) return { color: '#34d399', label: 'Excellent' };
   if (score >= 60) return { color: '#3b82f6', label: 'Good' };
   if (score >= 40) return { color: '#eab308', label: 'Fair' };

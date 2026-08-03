@@ -104,18 +104,30 @@ async def get_all_scans(user_id: int = None) -> list[dict]:
         ]
 
 async def update_scan_status(scan_id: str, status: str, current_phase: str = ""):
-    from sqlalchemy import update
     async with async_session() as session:
-        stmt = update(Scan).where(Scan.id == scan_id).values(status=status, current_phase=current_phase)
-        await session.execute(stmt)
-        await session.commit()
+        scan = await session.get(Scan, scan_id)
+        if scan:
+            if scan.status == "aborted" and status != "aborted":
+                return  # Do not overwrite aborted status
+            scan.status = status
+            if current_phase:
+                scan.current_phase = current_phase
+            await session.commit()
 
 async def update_scan_results(scan_id: str, results_json: str, risk_score: int, status: str = "completed"):
-    from sqlalchemy import update
     async with async_session() as session:
-        stmt = update(Scan).where(Scan.id == scan_id).values(results_json=results_json, risk_score=risk_score, status=status)
-        await session.execute(stmt)
-        await session.commit()
+        scan = await session.get(Scan, scan_id)
+        if scan:
+            if scan.status == "aborted" and status != "aborted":
+                # Save partial results json but retain aborted status and 0 risk score
+                scan.results_json = results_json
+                scan.risk_score = 0
+                await session.commit()
+                return
+            scan.results_json = results_json
+            scan.risk_score = risk_score
+            scan.status = status
+            await session.commit()
 
 async def delete_scan(scan_id: str) -> bool:
     from sqlalchemy import delete
