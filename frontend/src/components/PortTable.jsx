@@ -1,5 +1,5 @@
 import React, { useRef, useEffect, useState } from 'react';
-import { Network, Wifi, ShieldAlert, ShieldCheck, RotateCcw, Play, Pause, Eye, Search, Sparkles, RefreshCw, Layers, Cpu } from 'lucide-react';
+import { Network, Wifi, ShieldAlert, ShieldCheck, Play, Pause, Search, Sparkles, RefreshCw, ArrowLeftRight } from 'lucide-react';
 import GlassCard from './ui/GlassCard';
 import SectionHeader from './ui/SectionHeader';
 import { motion, AnimatePresence } from 'framer-motion';
@@ -48,14 +48,14 @@ export default function PortTable({ ports = [] }) {
   const webCount = ports.filter(p => [80, 443, 8080, 8443, 3000].includes(p.port)).length;
   const secureCount = ports.length - riskyCount;
 
-  // Initialize node physics positions whenever `ports` change
+  // Initialize nodes into clean Left Wing & Right Wing columns
   const initializeNodes = (w, h) => {
     const cx = w / 2;
     const cy = h / 2;
 
     const newNodes = [];
 
-    // Central Server Node (Index 0)
+    // Central Host Hub (Center)
     newNodes.push({
       id: 'central-hub',
       isHub: true,
@@ -63,17 +63,37 @@ export default function PortTable({ ports = [] }) {
       service: 'Central Host',
       x: cx,
       y: cy,
+      targetX: cx,
+      targetY: cy,
       vx: 0,
       vy: 0,
       radius: 26,
       mass: 5,
+      side: 'center',
       color: '#38bdf8',
     });
 
-    // Port Nodes
-    ports.forEach((p, i) => {
-      const angle = (i / Math.max(1, ports.length)) * Math.PI * 2 + (Math.random() - 0.5) * 0.5;
-      const dist = 110 + Math.random() * 80;
+    const activeList = filteredPorts.length > 0 ? filteredPorts : ports;
+    const total = activeList.length;
+
+    // Split nodes evenly into Left and Right wings
+    const leftCount = Math.ceil(total / 2);
+    const rightCount = Math.floor(total / 2);
+
+    const xOffset = Math.min(w * 0.32, 220); // Horizontal column offset from center
+    const minY = 60;
+    const maxY = h - 60;
+    const availableHeight = maxY - minY;
+
+    activeList.forEach((p, i) => {
+      const isLeft = i < leftCount;
+      const sideIndex = isLeft ? i : i - leftCount;
+      const countOnSide = isLeft ? leftCount : rightCount;
+
+      const stepY = countOnSide > 1 ? availableHeight / (countOnSide - 1) : 0;
+      const targetY = countOnSide > 1 ? minY + sideIndex * stepY : cy;
+      const targetX = isLeft ? cx - xOffset : cx + xOffset;
+
       const isRisky = HIGH_RISK_PORTS.includes(p.port);
       const isWeb = [80, 443, 8080, 8443, 3000].includes(p.port);
 
@@ -87,10 +107,13 @@ export default function PortTable({ ports = [] }) {
         banner: p.banner || '',
         isRisky,
         isWeb,
-        x: cx + Math.cos(angle) * dist,
-        y: cy + Math.sin(angle) * dist,
-        vx: (Math.random() - 0.5) * 2,
-        vy: (Math.random() - 0.5) * 2,
+        side: isLeft ? 'left' : 'right',
+        x: targetX + (Math.random() - 0.5) * 20,
+        y: targetY + (Math.random() - 0.5) * 20,
+        targetX,
+        targetY,
+        vx: 0,
+        vy: 0,
         radius: isRisky ? 18 : 15,
         mass: 1,
         color: isRisky ? '#ef4444' : isWeb ? '#06b6d4' : '#10b981',
@@ -100,14 +123,21 @@ export default function PortTable({ ports = [] }) {
     nodesRef.current = newNodes;
   };
 
-  // Re-arrange / Reset physics graph layout
+  // Reset / Re-align graph layout
   const resetLayout = () => {
     const canvas = canvasRef.current;
     if (!canvas) return;
     initializeNodes(canvas.clientWidth || 700, 400);
   };
 
-  // Canvas setup and Force-Directed Physics Simulation Engine
+  // Re-initialize layout when ports or filters update
+  useEffect(() => {
+    const canvas = canvasRef.current;
+    if (!canvas) return;
+    initializeNodes(canvas.clientWidth || 700, 400);
+  }, [ports, filter, searchQuery]);
+
+  // Main Canvas & Physics Simulation Render Loop
   useEffect(() => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -128,11 +158,11 @@ export default function PortTable({ ports = [] }) {
       initializeNodes(width, height);
     }
 
-    // Energy packet particles traveling on spring edges
-    const energyPackets = Array.from({ length: 24 }, (_, i) => ({
-      targetNodeIdx: (i % (ports.length || 1)) + 1,
+    // Energy packet stream particles traveling left & right
+    const energyPackets = Array.from({ length: 28 }, (_, i) => ({
+      targetNodeIdx: (i % Math.max(1, nodesRef.current.length - 1)) + 1,
       progress: Math.random(),
-      speed: 0.006 + Math.random() * 0.008,
+      speed: 0.007 + Math.random() * 0.009,
     }));
 
     let animationTime = 0;
@@ -148,89 +178,43 @@ export default function PortTable({ ports = [] }) {
       const cy = height / 2;
       const nodes = nodesRef.current;
 
-      // 1. Force-Directed Physics Physics Step
+      // 1. Bilateral Column Physics Step
       if (isSimulating) {
-        const kRepulsion = 4200; // Coulomb repulsion strength
-        const kSpring = 0.04;    // Hooke spring stiffness
-        const restingLen = 135;  // Rest spring length
-        const kCenterGravity = 0.015;
+        const kAnchor = 0.06; // Anchor pull towards target column position
+        const kRepel = 2200;   // Vertical repulsion between adjacent nodes
 
-        // Apply Forces between node pairs
-        for (let i = 0; i < nodes.length; i++) {
-          const n1 = nodes[i];
+        nodes.forEach((n, i) => {
+          if (n.isHub || n === draggedNodeRef.current) return;
 
-          // Center gravity force
-          if (!n1.isHub && draggedNodeRef.current !== n1) {
-            n1.vx += (cx - n1.x) * kCenterGravity * 0.1;
-            n1.vy += (cy - n1.y) * kCenterGravity * 0.1;
-          }
+          // Anchor force towards designated Left/Right slot
+          const dxAnchor = n.targetX - n.x;
+          const dyAnchor = n.targetY - n.y;
+          n.vx += dxAnchor * kAnchor;
+          n.vy += dyAnchor * kAnchor;
 
-          for (let j = i + 1; j < nodes.length; j++) {
-            const n2 = nodes[j];
-            const dx = n2.x - n1.x;
-            const dy = n2.y - n1.y;
+          // Node-to-node repulsion on same side to prevent overlap
+          nodes.forEach((other, j) => {
+            if (i === j || other.isHub || other.side !== n.side) return;
+            const dx = n.x - other.x;
+            const dy = n.y - other.y;
             const dist = Math.hypot(dx, dy) || 1;
-
-            // Repulsion force (all nodes repel each other)
-            const forceRepel = kRepulsion / (dist * dist);
-            const fxR = (dx / dist) * forceRepel;
-            const fyR = (dy / dist) * forceRepel;
-
-            if (draggedNodeRef.current !== n1 && !n1.isHub) {
-              n1.vx -= fxR / n1.mass;
-              n1.vy -= fyR / n1.mass;
+            if (dist < 50) {
+              const repelForce = kRepel / (dist * dist);
+              n.vx += (dx / dist) * repelForce;
+              n.vy += (dy / dist) * repelForce;
             }
-            if (draggedNodeRef.current !== n2 && !n2.isHub) {
-              n2.vx += fxR / n2.mass;
-              n2.vy += fyR / n2.mass;
-            }
+          });
 
-            // Connection Attraction force (Hub <-> Port & Port <-> Port if related)
-            const isConnected = n1.isHub || n2.isHub || (n1.isWeb && n2.isWeb) || (n1.isRisky && n2.isRisky);
-            if (isConnected) {
-              const delta = dist - restingLen;
-              const forceSpring = delta * kSpring;
-              const fxS = (dx / dist) * forceSpring;
-              const fyS = (dy / dist) * forceSpring;
-
-              if (draggedNodeRef.current !== n1 && !n1.isHub) {
-                n1.vx += fxS / n1.mass;
-                n1.vy += fyS / n1.mass;
-              }
-              if (draggedNodeRef.current !== n2 && !n2.isHub) {
-                n2.vx -= fxS / n2.mass;
-                n2.vy -= fyS / n2.mass;
-              }
-            }
-          }
-        }
-
-        // Update positions with damping friction and wall bounds
-        nodes.forEach((n) => {
-          if (n === draggedNodeRef.current) return;
-          if (n.isHub) {
-            // Keep Hub gently centered
-            n.x += (cx - n.x) * 0.1;
-            n.y += (cy - n.y) * 0.1;
-            return;
-          }
-
-          n.vx *= 0.88; // Damping
-          n.vy *= 0.88;
+          // Velocity Damping
+          n.vx *= 0.82;
+          n.vy *= 0.82;
 
           n.x += n.vx;
           n.y += n.vy;
-
-          // Soft boundary reflection
-          const padding = n.radius + 15;
-          if (n.x < padding) { n.x = padding; n.vx *= -0.5; }
-          if (n.x > width - padding) { n.x = width - padding; n.vx *= -0.5; }
-          if (n.y < padding) { n.y = padding; n.vy *= -0.5; }
-          if (n.y > height - padding) { n.y = height - padding; n.vy *= -0.5; }
         });
       }
 
-      // If dragging a node with mouse, snap its position to cursor
+      // Dragged Node Snap
       if (draggedNodeRef.current) {
         draggedNodeRef.current.x = mousePosRef.current.x;
         draggedNodeRef.current.y = mousePosRef.current.y;
@@ -238,24 +222,54 @@ export default function PortTable({ ports = [] }) {
         draggedNodeRef.current.vy = 0;
       }
 
-      // 2. Render Canvas Ambient Background & Grid Dot Matrix
-      const bgGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, width * 0.7);
-      bgGrad.addColorStop(0, 'rgba(15, 23, 42, 0.95)');
+      // 2. Render Deep Cyber Space Background & Grid Pattern
+      const bgGrad = ctx.createRadialGradient(cx, cy, 20, cx, cy, width * 0.75);
+      bgGrad.addColorStop(0, 'rgba(15, 23, 42, 0.96)');
       bgGrad.addColorStop(0.6, 'rgba(10, 15, 30, 0.98)');
       bgGrad.addColorStop(1, 'rgba(3, 7, 18, 1)');
       ctx.fillStyle = bgGrad;
       ctx.fillRect(0, 0, width, height);
 
-      // Subtle Cyber Grid Dots
-      ctx.fillStyle = 'rgba(56, 189, 248, 0.08)';
-      const dotGridSize = 30;
+      // Grid Dots Pattern
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.07)';
+      const dotGridSize = 28;
       for (let x = dotGridSize / 2; x < width; x += dotGridSize) {
         for (let y = dotGridSize / 2; y < height; y += dotGridSize) {
           ctx.fillRect(x, y, 1.5, 1.5);
         }
       }
 
-      // 3. Render Elastic Spring Connection Lines
+      // Left & Right Wing Column Guides
+      const xOffset = Math.min(width * 0.32, 220);
+      const leftColX = cx - xOffset;
+      const rightColX = cx + xOffset;
+
+      ctx.save();
+      ctx.setLineDash([4, 6]);
+      ctx.strokeStyle = 'rgba(56, 189, 248, 0.15)';
+      ctx.lineWidth = 1;
+
+      // Vertical Left Column Guide
+      ctx.beginPath();
+      ctx.moveTo(leftColX, 35);
+      ctx.lineTo(leftColX, height - 35);
+      ctx.stroke();
+
+      // Vertical Right Column Guide
+      ctx.beginPath();
+      ctx.moveTo(rightColX, 35);
+      ctx.lineTo(rightColX, height - 35);
+      ctx.stroke();
+      ctx.restore();
+
+      // Column Titles
+      ctx.font = 'bold 10px Inter, monospace';
+      ctx.textAlign = 'center';
+      ctx.fillStyle = 'rgba(56, 189, 248, 0.5)';
+      ctx.fillText('◄ LEFT PORTS', leftColX, 24);
+      ctx.fillText('RIGHT PORTS ►', rightColX, 24);
+
+      // 3. Render Curved Laser Beams from Hub to Left & Right Nodes
       const hubNode = nodes.find(n => n.isHub) || { x: cx, y: cy };
       nodes.forEach((n) => {
         if (n.isHub) return;
@@ -263,29 +277,37 @@ export default function PortTable({ ports = [] }) {
         const isHovered = hoveredNode?.port === n.portData?.port || selectedNode?.port === n.portData?.port;
         const isDragged = draggedNodeRef.current === n;
 
+        // Smooth curved laser path
+        const controlX = (hubNode.x + n.x) / 2;
+        const controlY = (hubNode.y + n.y) / 2 + (n.side === 'left' ? -15 : 15);
+
         ctx.beginPath();
         ctx.moveTo(hubNode.x, hubNode.y);
-        ctx.lineTo(n.x, n.y);
+        ctx.quadraticCurveTo(controlX, controlY, n.x, n.y);
 
         ctx.lineWidth = isHovered || isDragged ? 2.5 : 1.2;
         ctx.strokeStyle = n.isRisky
-          ? isHovered ? 'rgba(239, 68, 68, 0.8)' : 'rgba(239, 68, 68, 0.35)'
+          ? isHovered ? 'rgba(239, 68, 68, 0.85)' : 'rgba(239, 68, 68, 0.32)'
           : n.isWeb
-          ? isHovered ? 'rgba(6, 182, 212, 0.8)' : 'rgba(6, 182, 212, 0.25)'
-          : isHovered ? 'rgba(16, 185, 129, 0.8)' : 'rgba(16, 185, 129, 0.25)';
+          ? isHovered ? 'rgba(6, 182, 212, 0.85)' : 'rgba(6, 182, 212, 0.25)'
+          : isHovered ? 'rgba(16, 185, 129, 0.85)' : 'rgba(16, 185, 129, 0.25)';
 
         ctx.stroke();
       });
 
-      // 4. Render Animated Energy Particles on Spring Connections
+      // 4. Render Energy Stream Packets
       energyPackets.forEach((pt) => {
         pt.progress += pt.speed;
         if (pt.progress > 1) pt.progress = 0;
 
         const targetNode = nodes[pt.targetNodeIdx];
-        if (targetNode) {
-          const px = hubNode.x + (targetNode.x - hubNode.x) * pt.progress;
-          const py = hubNode.y + (targetNode.y - hubNode.y) * pt.progress;
+        if (targetNode && !targetNode.isHub) {
+          const t = pt.progress;
+          const controlX = (hubNode.x + targetNode.x) / 2;
+          const controlY = (hubNode.y + targetNode.y) / 2 + (targetNode.side === 'left' ? -15 : 15);
+
+          const px = (1 - t) * (1 - t) * hubNode.x + 2 * (1 - t) * t * controlX + t * t * targetNode.x;
+          const py = (1 - t) * (1 - t) * hubNode.y + 2 * (1 - t) * t * controlY + t * t * targetNode.y;
 
           ctx.beginPath();
           ctx.arc(px, py, 2.5, 0, Math.PI * 2);
@@ -297,7 +319,7 @@ export default function PortTable({ ports = [] }) {
         }
       });
 
-      // 5. Render Central Host Server Node
+      // 5. Render Central Host Server Hub
       ctx.save();
       const hubPulse = Math.sin(animationTime * 2.5) * 4;
       // Outer aura ring
@@ -306,7 +328,7 @@ export default function PortTable({ ports = [] }) {
       ctx.fillStyle = 'rgba(56, 189, 248, 0.12)';
       ctx.fill();
 
-      // Outer border circle
+      // Outer circle
       ctx.beginPath();
       ctx.arc(hubNode.x, hubNode.y, hubNode.radius, 0, Math.PI * 2);
       ctx.fillStyle = '#0f172a';
@@ -315,7 +337,7 @@ export default function PortTable({ ports = [] }) {
       ctx.strokeStyle = '#38bdf8';
       ctx.stroke();
 
-      // Inner core glow
+      // Core glow
       ctx.beginPath();
       ctx.arc(hubNode.x, hubNode.y, 10, 0, Math.PI * 2);
       ctx.fillStyle = '#38bdf8';
@@ -324,7 +346,7 @@ export default function PortTable({ ports = [] }) {
       ctx.fill();
       ctx.shadowBlur = 0;
 
-      // Label below central hub
+      // Central Host Label
       ctx.fillStyle = '#38bdf8';
       ctx.font = 'bold 10px Inter, monospace';
       ctx.textAlign = 'center';
@@ -332,14 +354,14 @@ export default function PortTable({ ports = [] }) {
       ctx.fillText('HOST HUB', hubNode.x, hubNode.y + hubNode.radius + 6);
       ctx.restore();
 
-      // 6. Render Floating Glass Nodes
+      // 6. Render Bilateral Port Nodes
       nodes.forEach((n) => {
         if (n.isHub) return;
 
         const isHovered = hoveredNode?.port === n.portData?.port || selectedNode?.port === n.portData?.port;
         const isDragged = draggedNodeRef.current === n;
 
-        // Dynamic Glow Ring
+        // Glow aura ring
         const glowRadius = n.radius + (isHovered || isDragged ? 8 : 4);
         ctx.beginPath();
         ctx.arc(n.x, n.y, glowRadius, 0, Math.PI * 2);
@@ -351,12 +373,11 @@ export default function PortTable({ ports = [] }) {
         ctx.arc(n.x, n.y, n.radius, 0, Math.PI * 2);
         ctx.fillStyle = '#090d16';
         ctx.fill();
-
         ctx.lineWidth = isHovered || isDragged ? 2.5 : 1.8;
         ctx.strokeStyle = n.color;
         ctx.stroke();
 
-        // High Risk Warning Pulse
+        // High Risk Alert Pulse
         if (n.isRisky) {
           const alertPulse = (Math.sin(animationTime * 4) + 1) * 2.5;
           ctx.beginPath();
@@ -373,10 +394,12 @@ export default function PortTable({ ports = [] }) {
         ctx.textBaseline = 'middle';
         ctx.fillText(n.portNumber, n.x, n.y);
 
-        // Service Label below Node
+        // Service Protocol Label next to node (Left side or Right side)
         ctx.fillStyle = n.color;
         ctx.font = '600 9px Inter, sans-serif';
-        ctx.fillText(n.service.toUpperCase(), n.x, n.y + n.radius + 10);
+        ctx.textAlign = n.side === 'left' ? 'right' : 'left';
+        const labelX = n.side === 'left' ? n.x - n.radius - 8 : n.x + n.radius + 8;
+        ctx.fillText(n.service.toUpperCase(), labelX, n.y);
       });
 
       ctx.restore();
@@ -390,7 +413,7 @@ export default function PortTable({ ports = [] }) {
     };
   }, [ports, isSimulating, hoveredNode, selectedNode]);
 
-  // Mouse Handlers for Node Dragging & Selection
+  // Mouse Dragging & Hover Handlers
   const handleMouseDown = (e) => {
     const canvas = canvasRef.current;
     if (!canvas) return;
@@ -399,7 +422,6 @@ export default function PortTable({ ports = [] }) {
     const mx = e.clientX - rect.left;
     const my = e.clientY - rect.top;
 
-    // Check hit test for node dragging
     const clickedNode = nodesRef.current.find((n) => {
       const dist = Math.hypot(mx - n.x, my - n.y);
       return dist <= n.radius + 6;
@@ -425,7 +447,6 @@ export default function PortTable({ ports = [] }) {
     mousePosRef.current = { x: mx, y: my };
 
     if (!draggedNodeRef.current) {
-      // Hover detection
       const hovered = nodesRef.current.find((n) => {
         const dist = Math.hypot(mx - n.x, my - n.y);
         return dist <= n.radius + 6;
@@ -445,13 +466,13 @@ export default function PortTable({ ports = [] }) {
 
   return (
     <div className="space-y-6">
-      {/* Interactive Force-Directed Node Graph Header & Visualizer Card */}
+      {/* Bilateral Dual-Wing Connected Ports Graph Card */}
       <GlassCard delay={0.2} className="relative overflow-hidden p-6 border border-primary/20 shadow-2xl">
         <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4 border-b border-border/50 pb-4">
           <SectionHeader
-            title="Interactive Connected Ports Force Graph"
-            subtitle={`${ports.length} connected ports rendered in a physics spring network layout`}
-            icon={Network}
+            title="Bilateral 2-Direction Connected Ports Topology"
+            subtitle={`${ports.length} connected ports aligned in Left & Right wings`}
+            icon={ArrowLeftRight}
             color="cyan"
           />
 
@@ -473,19 +494,19 @@ export default function PortTable({ ports = [] }) {
                   ? 'bg-primary/20 text-primary border-primary/30'
                   : 'bg-secondary/40 text-muted-foreground border-border'
               }`}
-              title="Toggle Physics Force Simulation"
+              title="Toggle Physics Alignment"
             >
               {isSimulating ? <Pause className="h-3.5 w-3.5" /> : <Play className="h-3.5 w-3.5" />}
-              {isSimulating ? 'Pause Physics' : 'Resume Physics'}
+              {isSimulating ? 'Pause Alignment' : 'Resume Alignment'}
             </button>
 
             <button
               onClick={resetLayout}
               className="p-2 rounded-lg border border-border bg-secondary/40 text-muted-foreground hover:text-foreground hover:bg-secondary transition-colors flex items-center gap-1.5 text-xs font-medium"
-              title="Reset Graph Layout"
+              title="Align Ports Left & Right"
             >
               <RefreshCw className="h-3.5 w-3.5" />
-              Reset Graph
+              Re-align Layout
             </button>
           </div>
         </div>
@@ -528,7 +549,7 @@ export default function PortTable({ ports = [] }) {
         {/* Interactive Physics Canvas Container */}
         <div
           ref={containerRef}
-          className="relative w-full h-[400px] mt-4 rounded-2xl bg-black/80 border border-primary/20 overflow-hidden cursor-grab active:cursor-grabbing shadow-inner"
+          className="relative w-full h-[420px] mt-4 rounded-2xl bg-black/80 border border-primary/20 overflow-hidden cursor-grab active:cursor-grabbing shadow-inner"
         >
           <canvas
             ref={canvasRef}
@@ -590,7 +611,7 @@ export default function PortTable({ ports = [] }) {
           {/* Interactive Hint */}
           <div className="absolute bottom-3 left-3 pointer-events-none text-[11px] text-muted-foreground font-mono bg-slate-950/80 px-3 py-1.5 rounded-lg border border-primary/20 flex items-center gap-2 backdrop-blur-md">
             <Sparkles className="h-3.5 w-3.5 text-cyan-400 animate-pulse" />
-            Click & drag any node to test spring physics | Hover or click to inspect
+            Ports organized in 2 directions (Left & Right columns) | Drag nodes to test spring return
           </div>
         </div>
       </GlassCard>
