@@ -40,21 +40,21 @@ export default function HeaderScanBar({ onScan, isScanning }) {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="rounded-[28px] border border-border bg-foreground/5 p-4 backdrop-blur-xl">
+      <form onSubmit={handleSubmit} className="rounded-[28px] border border-border bg-card p-4 backdrop-blur-xl shadow-sm">
         <div className="grid gap-3 xl:grid-cols-[1fr_240px_auto]">
           <input
             type="text"
             value={target}
             onChange={(event) => setTarget(event.target.value)}
             placeholder="Enter IP or Domain, e.g., target.example.com"
-            className="h-14 rounded-2xl border border-border bg-card/70 px-4 text-sm text-foreground outline-none ring-0 placeholder:text-muted-foreground"
+            className="h-14 rounded-2xl border border-border bg-background px-4 text-sm text-foreground outline-none focus:border-primary placeholder:text-muted-foreground transition-colors"
             disabled={isScanning}
           />
 
           <select
             value={mode}
             onChange={(event) => setMode(event.target.value)}
-            className="h-14 rounded-2xl border border-border bg-card/70 px-4 text-sm text-foreground outline-none"
+            className="h-14 rounded-2xl border border-border bg-background px-4 text-sm text-foreground outline-none focus:border-primary transition-colors"
             disabled={isScanning}
           >
             {modes.map((item) => (
@@ -67,7 +67,7 @@ export default function HeaderScanBar({ onScan, isScanning }) {
           <button
             type="submit"
             disabled={isScanning}
-            className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-cyan-400 px-6 text-sm font-semibold text-slate-950 shadow-[0_0_30px_rgba(0,240,255,0.25)] transition hover:bg-cyan-300 disabled:opacity-60"
+            className="inline-flex h-14 items-center justify-center gap-2 rounded-2xl bg-primary px-6 text-sm font-semibold text-primary-foreground shadow-md transition hover:bg-primary/90 disabled:opacity-60"
           >
             {isScanning ? <Sparkles className="h-4 w-4 animate-spin" /> : <Shield className="h-4 w-4" />}
             {isScanning ? 'Assessing...' : 'Start Assessment'}

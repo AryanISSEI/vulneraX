@@ -59,7 +59,7 @@ export default function ScanForm({ onScan, isScanning }) {
     
     for (let i = 0; i < numParticles; i++) {
       const particle = document.createElement('div');
-      particle.className = 'absolute bg-primary rounded-full shadow-[0_0_10px_#00f0ff] z-50';
+      particle.className = 'absolute bg-primary rounded-full shadow-md z-50';
       
       // Random size
       const size = Math.random() * 6 + 2;
@@ -128,14 +128,14 @@ export default function ScanForm({ onScan, isScanning }) {
         <div className="relative flex-1">
           <div className="absolute inset-0 bg-primary/20 blur-xl rounded-2xl opacity-0 group-hover:opacity-100 transition-opacity duration-500" />
           
-          <div className="relative flex items-center bg-black/60 border-2 border-border hover:border-primary/50 focus-within:border-primary rounded-2xl px-4 py-2 backdrop-blur-xl transition-all duration-300 shadow-[0_0_20px_rgba(0,0,0,0.5)] focus-within:shadow-[0_0_30px_rgba(0,240,255,0.2)]">
-            <Target className="h-6 w-6 text-primary animate-pulse" />
+          <div className="relative flex items-center bg-card border-2 border-border hover:border-primary/50 focus-within:border-primary rounded-2xl px-4 py-2 backdrop-blur-xl transition-all duration-300 shadow-md focus-within:shadow-[0_0_25px_var(--primary)]">
+            <Target className="h-6 w-6 text-primary shrink-0 animate-pulse" />
             <input
               type="text"
               value={target}
               onChange={(e) => setTarget(e.target.value)}
               placeholder="ENTER TARGET DOMAIN OR IP..."
-              className="w-full bg-transparent border-none outline-none text-foreground px-4 py-4 font-mono text-lg placeholder:text-foreground/30 tracking-widest"
+              className="w-full bg-transparent border-none outline-none text-foreground px-4 py-4 font-mono text-lg placeholder:text-muted-foreground tracking-widest"
               disabled={shattered}
             />
           </div>
@@ -146,8 +146,8 @@ export default function ScanForm({ onScan, isScanning }) {
           disabled={!target.trim() || shattered}
           className={`relative overflow-hidden rounded-2xl px-10 py-4 font-bold tracking-widest uppercase transition-all duration-300 ${
             target.trim() && !shattered
-              ? 'bg-primary text-black hover:scale-105 shadow-[0_0_20px_rgba(0,240,255,0.4)] hover:shadow-[0_0_40px_rgba(0,240,255,0.6)]' 
-              : 'bg-foreground/5 text-foreground/50 border border-border'
+              ? 'bg-primary text-primary-foreground hover:scale-[1.02] shadow-md hover:shadow-lg focus:ring-2 focus:ring-ring' 
+              : 'bg-muted text-muted-foreground border border-border opacity-50 cursor-not-allowed'
           }`}
         >
           {shattered ? (
@@ -180,7 +180,7 @@ export default function ScanForm({ onScan, isScanning }) {
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom Headers (JSON)</label>
                 <textarea 
-                  className="w-full bg-black/60 border-2 border-border focus:border-primary/50 rounded-xl p-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/50 min-h-[100px] resize-y shadow-inner"
+                  className="w-full bg-card border-2 border-border focus:border-primary rounded-xl p-3 font-mono text-xs text-foreground placeholder:text-muted-foreground min-h-[100px] resize-y shadow-inner outline-none transition-colors"
                   placeholder='{"Authorization": "Bearer token", "X-Custom": "Value"}'
                   value={headers}
                   onChange={(e) => setHeaders(e.target.value)}
@@ -189,7 +189,7 @@ export default function ScanForm({ onScan, isScanning }) {
               <div className="flex flex-col gap-2">
                 <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom Cookies (JSON)</label>
                 <textarea 
-                  className="w-full bg-black/60 border-2 border-border focus:border-primary/50 rounded-xl p-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/50 min-h-[100px] resize-y shadow-inner"
+                  className="w-full bg-card border-2 border-border focus:border-primary rounded-xl p-3 font-mono text-xs text-foreground placeholder:text-muted-foreground min-h-[100px] resize-y shadow-inner outline-none transition-colors"
                   placeholder='{"session_id": "12345", "user_prefs": "dark_mode"}'
                   value={cookies}
                   onChange={(e) => setCookies(e.target.value)}
@@ -205,7 +205,7 @@ export default function ScanForm({ onScan, isScanning }) {
         <div className="absolute inset-0 flex items-center justify-center pointer-events-none">
           <div className="text-center animate-in fade-in zoom-in duration-500 delay-500">
             <h3 className="text-primary font-mono tracking-[0.5em] text-sm mb-2 opacity-80">INITIALIZING CRAWLER</h3>
-            <p className="text-foreground text-2xl font-extrabold tracking-wider filter drop-shadow-[0_0_10px_rgba(255,255,255,0.5)]">
+            <p className="text-foreground text-2xl font-extrabold tracking-wider filter drop-shadow-md">
               {target}
             </p>
           </div>

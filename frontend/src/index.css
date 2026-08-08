@@ -3,35 +3,35 @@
 @layer base {
   :root {
     /* Light Theme (CyberScope Classic) */
-    --background: #cbd5e1;
+    --background: #f8fafc;
     --foreground: #0f172a;
     
-    --card: #e2e8f0;
+    --card: #ffffff;
     --card-foreground: #0f172a;
     
-    --popover: #e2e8f0;
+    --popover: #ffffff;
     --popover-foreground: #0f172a;
     
-    --primary: #06112c; /* Dark Navy for buttons */
+    --primary: #2563eb; /* Vibrant Electric Blue */
     --primary-foreground: #ffffff;
     
-    --secondary: #f8fafc;
-    --secondary-foreground: #1e293b;
+    --secondary: #f1f5f9;
+    --secondary-foreground: #0f172a;
     
     --muted: #f1f5f9;
     --muted-foreground: #64748b;
     
     --accent: #e2e8f0;
-    --accent-foreground: #1e293b;
+    --accent-foreground: #0f172a;
     
     --destructive: #ef4444;
     --destructive-foreground: #ffffff;
     
-    --border: #94a3b8;
-    --input: #94a3b8;
-    --ring: #06112c;
+    --border: #cbd5e1;
+    --input: #cbd5e1;
+    --ring: #2563eb;
     
-    --radius: 0.5rem;
+    --radius: 0.75rem;
 
     --risk-critical: #ef4444;
     --risk-high: #f97316;

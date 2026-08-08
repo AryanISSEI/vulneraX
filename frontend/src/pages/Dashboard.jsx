@@ -238,7 +238,7 @@ export default function Dashboard() {
 
           {/* Active Target Banner */}
           {targetDomain && (
-            <div className="p-4 rounded-xl bg-card/60 border border-border backdrop-blur-md flex flex-wrap items-center justify-between gap-4 shrink-0 transition-all">
+            <div className="p-4 rounded-xl bg-card border border-border backdrop-blur-md flex flex-wrap items-center justify-between gap-4 shrink-0 transition-all shadow-sm">
               <div className="flex items-center gap-3">
                 <div className="p-2.5 rounded-lg bg-primary/10 border border-primary/20 text-primary">
                   <Globe className="h-5 w-5 animate-pulse" />
@@ -259,12 +259,12 @@ export default function Dashboard() {
                 </div>
                 <span className={`ml-2 px-3 py-1 text-xs font-semibold rounded-full border ${
                   isScanning
-                    ? 'bg-amber-500/10 text-amber-400 border-amber-500/20 animate-pulse'
+                    ? 'bg-amber-500/10 text-amber-600 dark:text-amber-400 border-amber-500/30 animate-pulse'
                     : scanStatus === 'aborted'
-                    ? 'bg-rose-500/10 text-rose-400 border-rose-500/20'
+                    ? 'bg-rose-500/10 text-rose-600 dark:text-rose-400 border-rose-500/30'
                     : scanStatus === 'error'
-                    ? 'bg-destructive/10 text-destructive border-destructive/20'
-                    : 'bg-emerald-500/10 text-emerald-400 border-emerald-500/20'
+                    ? 'bg-destructive/10 text-destructive border-destructive/30'
+                    : 'bg-emerald-500/10 text-emerald-600 dark:text-emerald-400 border-emerald-500/30'
                 }`}>
                   {isScanning ? 'Scan in Progress' : scanStatus === 'aborted' ? 'Scan Aborted' : scanStatus === 'error' ? 'Scan Error' : 'Scan Completed'}
                 </span>
@@ -387,7 +387,7 @@ export default function Dashboard() {
               )}
 
               {activeTab === 'graph' && (
-                <div className="flex-1 min-h-[500px] w-full border border-border rounded-xl overflow-hidden bg-black/40 gsap-stagger-item">
+                <div className="flex-1 min-h-[500px] w-full border border-border rounded-xl overflow-hidden bg-card gsap-stagger-item shadow-sm">
                   <AttackGraph scanResult={scanResult} />
                 </div>
               )}
