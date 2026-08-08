@@ -9,7 +9,7 @@ VulneraX is an AI-powered web application security assessment and vulnerability 
 - **Framework**: React 19 + Vite
 - **Styling**: Tailwind CSS 4 with custom CSS variables for seamless Light/Dark theming and premium "Glassmorphism" UI effects.
 - **Icons & Animations**: Lucide React for iconography. Framer Motion & GSAP for smooth micro-animations and page transitions.
-- **Charting**: Chart.js (`react-chartjs-2`) for dynamic visualizations like the Vulnerability Spectrum (Radar Chart) and Risk Score Gauge.
+- **Charting & Graphs**: Chart.js (`react-chartjs-2`) for the Vulnerability Spectrum (Radar Chart), Risk Score Gauge, and `@xyflow/react` for interactive 3D Attack Graph topology.
 - **Routing**: React Router DOM (for navigating between Dashboard, History, Reports, Settings, etc.).
 
 ### Backend (API & Scanner Engine)
@@ -22,6 +22,9 @@ VulneraX is an AI-powered web application security assessment and vulnerability 
   - `beautifulsoup4` for HTML parsing, form extraction, and technology fingerprinting.
   - `python-whois` & `dnspython` for comprehensive DNS and domain registry lookups.
   - Custom heuristic modules for detecting SQL Injection (SQLi), Cross-Site Scripting (XSS), Path Traversal, and exposed Sensitive Files.
+- **Reporting & AI**: 
+  - `google-generativeai` (`gemini-1.5-pro`) for AI-powered remediation and threat chain analysis.
+  - `fpdf2` & `Jinja2` for professional PDF and HTML report generation.
 
 ## 3. Project Structure
 
