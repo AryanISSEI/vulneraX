@@ -1,9 +1,12 @@
 import { useState, useRef, useEffect } from 'react';
-import { Target, Loader2 } from 'lucide-react';
+import { Target, Loader2, Settings, ChevronDown, ChevronUp } from 'lucide-react';
 import gsap from 'gsap';
 
 export default function ScanForm({ onScan, isScanning }) {
   const [target, setTarget] = useState('');
+  const [headers, setHeaders] = useState('');
+  const [cookies, setCookies] = useState('');
+  const [showAdvanced, setShowAdvanced] = useState(false);
   const [shattered, setShattered] = useState(false);
   const formRef = useRef(null);
   const containerRef = useRef(null);
@@ -12,10 +15,27 @@ export default function ScanForm({ onScan, isScanning }) {
   const handleSubmit = (e) => {
     e.preventDefault();
     if (target.trim()) {
+      let parsedHeaders = null;
+      let parsedCookies = null;
+
+      try {
+        if (headers.trim()) parsedHeaders = JSON.parse(headers);
+      } catch (err) {
+        alert("Invalid JSON format in Headers. Please provide valid JSON.");
+        return;
+      }
+
+      try {
+        if (cookies.trim()) parsedCookies = JSON.parse(cookies);
+      } catch (err) {
+        alert("Invalid JSON format in Cookies. Please provide valid JSON.");
+        return;
+      }
+
       triggerShatterEffect();
       // Delay the actual scan start so the animation plays out
       setTimeout(() => {
-        onScan(target.trim());
+        onScan(target.trim(), parsedHeaders, parsedCookies);
         setTarget('');
       }, 1500);
     }
@@ -140,6 +160,45 @@ export default function ScanForm({ onScan, isScanning }) {
           )}
         </button>
       </form>
+
+      {/* Advanced Settings Toggle */}
+      {!shattered && (
+        <div className="mt-4 flex flex-col items-center">
+          <button 
+            type="button" 
+            onClick={() => setShowAdvanced(!showAdvanced)}
+            className="flex items-center gap-2 text-xs font-semibold text-muted-foreground hover:text-primary transition-colors uppercase tracking-widest"
+          >
+            <Settings className="h-4 w-4" />
+            Advanced Settings
+            {showAdvanced ? <ChevronUp className="h-4 w-4" /> : <ChevronDown className="h-4 w-4" />}
+          </button>
+          
+          {/* Advanced Settings Panel */}
+          {showAdvanced && (
+            <div className="mt-4 w-full grid grid-cols-1 sm:grid-cols-2 gap-4 animate-in slide-in-from-top-4 fade-in duration-300">
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom Headers (JSON)</label>
+                <textarea 
+                  className="w-full bg-black/60 border-2 border-border focus:border-primary/50 rounded-xl p-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/50 min-h-[100px] resize-y shadow-inner"
+                  placeholder='{"Authorization": "Bearer token", "X-Custom": "Value"}'
+                  value={headers}
+                  onChange={(e) => setHeaders(e.target.value)}
+                />
+              </div>
+              <div className="flex flex-col gap-2">
+                <label className="text-xs font-semibold text-muted-foreground uppercase tracking-wider">Custom Cookies (JSON)</label>
+                <textarea 
+                  className="w-full bg-black/60 border-2 border-border focus:border-primary/50 rounded-xl p-3 font-mono text-xs text-foreground placeholder:text-muted-foreground/50 min-h-[100px] resize-y shadow-inner"
+                  placeholder='{"session_id": "12345", "user_prefs": "dark_mode"}'
+                  value={cookies}
+                  onChange={(e) => setCookies(e.target.value)}
+                />
+              </div>
+            </div>
+          )}
+        </div>
+      )}
 
       {/* Target display when shattered */}
       {shattered && (

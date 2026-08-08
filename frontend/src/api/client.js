@@ -46,8 +46,8 @@ export const getMe = async () => {
   return client.get('/auth/me');
 };
 
-export const startScan = async (target) => {
-  return client.post('/scan', { target });
+export const startScan = async (target, headers = null, cookies = null) => {
+  return client.post('/scan', { target, headers, cookies });
 };
 
 export const getScanStatus = async (scanId) => {
@@ -73,6 +73,14 @@ export const abortScan = async (scanId) => {
 export const getReport = async (scanId, format) => {
   return client.get(`/report/${scanId}?format=${format}`, {
     responseType: format === 'json' ? 'json' : 'blob',
+  });
+};
+
+export const generateAIRemediation = async (scanId, title, description, evidence) => {
+  return client.post(`/scan/${scanId}/remediation/ai`, {
+    vulnerability_title: title,
+    vulnerability_description: description,
+    evidence: evidence
   });
 };
 

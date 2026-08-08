@@ -11,7 +11,7 @@ REDIRECT_PARAMS = ["next", "url", "redirect", "return", "returnTo", "return_url"
                    "continue", "forward", "to", "target", "ref", "site"]
 
 
-async def test_redirect(target: str, crawl_data: dict) -> list[VulnerabilityResult]:
+async def test_redirect(target: str, crawl_data: dict, headers: dict = None, cookies: dict = None) -> list[VulnerabilityResult]:
     """Test for open redirect vulnerabilities."""
     domain = target.replace("https://", "").replace("http://", "").strip("/").split("/")[0]
     base_urls = [f"https://{domain}", f"http://{domain}"]
@@ -21,7 +21,7 @@ async def test_redirect(target: str, crawl_data: dict) -> list[VulnerabilityResu
         timeout=10,
         follow_redirects=False,  # Important: don't follow redirects
         verify=False
-    ) as client:
+    , headers=headers, cookies=cookies) as client:
         # Test common redirect parameters on discovered URLs
         urls_to_test = crawl_data.get("urls", [])[:10]
         if not urls_to_test:

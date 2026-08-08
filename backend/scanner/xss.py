@@ -12,12 +12,12 @@ XSS_PAYLOADS = [
 ]
 
 
-async def test_xss(target: str, crawl_data: dict) -> list[VulnerabilityResult]:
+async def test_xss(target: str, crawl_data: dict, headers: dict = None, cookies: dict = None) -> list[VulnerabilityResult]:
     """Test for reflected XSS vulnerabilities in forms and URL parameters."""
     domain = target.replace("https://", "").replace("http://", "").strip("/").split("/")[0]
     results = []
 
-    async with httpx.AsyncClient(timeout=10, follow_redirects=True, verify=False) as client:
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True, verify=False, headers=headers, cookies=cookies) as client:
         # Test URL parameters
         for url in crawl_data.get("params", [])[:10]:
             parsed = urlparse(url)

@@ -1,8 +1,9 @@
-import { X, Copy, CheckCircle2, AlertTriangle, ShieldCheck } from 'lucide-react';
+import { X, Copy, CheckCircle2, AlertTriangle, ShieldCheck, Sparkles, Loader2 } from 'lucide-react';
 import ReactMarkdown from 'react-markdown';
 import { motion, AnimatePresence } from 'framer-motion';
 import { useState, useEffect } from 'react';
 import { createPortal } from 'react-dom';
+import { generateAIRemediation } from '../api/client';
 
 const getRemediationSnippet = (vuln) => {
   const name = (vuln?.name || '').toLowerCase();
@@ -26,16 +27,43 @@ const getRemediationSnippet = (vuln) => {
   return `// Standard Security Remediation Best Practices:\n// 1. Validate and sanitize all incoming client parameters.\n// 2. Enforce Strict Transport Security (HSTS) and HTTPS TLS 1.3.\n// 3. Principle of Least Privilege for API/Database credentials.`;
 };
 
-export default function RemediationPanel({ vulnerability, onClose }) {
+export default function RemediationPanel({ vulnerability, onClose, scanId }) {
   const [copied, setCopied] = useState(false);
   const [mounted, setMounted] = useState(false);
+  const [isGenerating, setIsGenerating] = useState(false);
+  const [aiRemediation, setAiRemediation] = useState(null);
+  const [aiError, setAiError] = useState(null);
 
   useEffect(() => {
     setMounted(true);
+    setAiRemediation(null); // Reset when a new vulnerability is opened
+    setAiError(null);
     return () => setMounted(false);
-  }, []);
+  }, [vulnerability]);
 
   if (!vulnerability || !mounted) return null;
+
+  const handleGenerateAI = async () => {
+    if (!scanId) {
+       setAiError("Scan ID is required for AI remediation.");
+       return;
+    }
+    setIsGenerating(true);
+    setAiError(null);
+    try {
+      const { data } = await generateAIRemediation(
+        scanId,
+        vulnerability.name,
+        vulnerability.description,
+        vulnerability.evidence
+      );
+      setAiRemediation(data.remediation);
+    } catch (err) {
+      setAiError(err.response?.data?.detail || "Failed to generate AI remediation. Ensure your API key is set.");
+    } finally {
+      setIsGenerating(false);
+    }
+  };
 
   const handleCopy = (text) => {
     navigator.clipboard.writeText(text);
@@ -127,8 +155,31 @@ export default function RemediationPanel({ vulnerability, onClose }) {
             )}
 
             <div className="prose prose-invert prose-p:text-muted-foreground prose-headings:text-foreground max-w-none">
-              <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-primary block mb-2">Recommended Guidance</span>
-              {vulnerability.recommendation ? (
+              <div className="flex items-center justify-between mb-4">
+                <span className="text-[10px] font-bold font-mono uppercase tracking-wider text-primary block">Recommended Guidance</span>
+                <button
+                  onClick={handleGenerateAI}
+                  disabled={isGenerating}
+                  className="flex items-center gap-2 px-3 py-1.5 bg-primary/10 hover:bg-primary/20 text-primary border border-primary/30 rounded-full text-xs font-bold uppercase tracking-widest transition-all shadow-[0_0_15px_rgba(0,240,255,0.15)] hover:shadow-[0_0_25px_rgba(0,240,255,0.3)] disabled:opacity-50"
+                >
+                  {isGenerating ? <Loader2 className="h-3.5 w-3.5 animate-spin" /> : <Sparkles className="h-3.5 w-3.5" />}
+                  {isGenerating ? 'Generating...' : 'AI Analyze'}
+                </button>
+              </div>
+
+              {aiError && (
+                <div className="p-3 mb-4 rounded-lg bg-destructive/10 border border-destructive/20 text-destructive text-sm font-mono">
+                  {aiError}
+                </div>
+              )}
+
+              {aiRemediation ? (
+                <div className="p-4 rounded-xl border border-primary/30 bg-primary/5 shadow-inner">
+                  <ReactMarkdown components={components}>
+                    {aiRemediation}
+                  </ReactMarkdown>
+                </div>
+              ) : vulnerability.recommendation ? (
                  <ReactMarkdown components={components}>
                    {vulnerability.recommendation}
                  </ReactMarkdown>

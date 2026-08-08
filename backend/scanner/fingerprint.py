@@ -59,7 +59,7 @@ TECH_SIGNATURES = {
 }
 
 
-async def fingerprint(target: str) -> FingerprintResult:
+async def fingerprint(target: str, headers: dict = None, cookies: dict = None) -> FingerprintResult:
     """Detect web technologies used by the target."""
     result = FingerprintResult()
     domain = target.replace("https://", "").replace("http://", "").strip("/").split("/")[0]
@@ -73,7 +73,7 @@ async def fingerprint(target: str) -> FingerprintResult:
                 timeout=10,
                 follow_redirects=True,
                 verify=False
-            ) as client:
+            , headers=headers, cookies=cookies) as client:
                 resp = await client.get(url)
 
                 # Check headers

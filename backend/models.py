@@ -14,6 +14,8 @@ class Severity(str, Enum):
 
 class ScanRequest(BaseModel):
     target: str = Field(..., description="Domain or IP to scan", examples=["example.com"])
+    headers: Optional[dict[str, str]] = Field(None, description="Custom HTTP headers to include in scan requests")
+    cookies: Optional[dict[str, str]] = Field(None, description="Custom cookies to include in scan requests")
 
 
 class PortResult(BaseModel):

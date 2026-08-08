@@ -84,14 +84,14 @@ SENSITIVE_FILES = [
 ]
 
 
-async def check_sensitive_files(target: str) -> list[VulnerabilityResult]:
+async def check_sensitive_files(target: str, headers: dict = None, cookies: dict = None) -> list[VulnerabilityResult]:
     """Check for commonly exposed sensitive files."""
     domain = target.replace("https://", "").replace("http://", "").strip("/").split("/")[0]
     results = []
 
     base_urls = [f"https://{domain}", f"http://{domain}"]
 
-    async with httpx.AsyncClient(timeout=8, follow_redirects=False, verify=False) as client:
+    async with httpx.AsyncClient(timeout=8, follow_redirects=False, verify=False, headers=headers, cookies=cookies) as client:
         for base_url in base_urls:
             try:
                 # Test connectivity first

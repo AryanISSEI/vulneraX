@@ -4,7 +4,7 @@ from urllib.parse import urljoin, urlparse
 import asyncio
 
 
-async def crawl(target: str, max_depth: int = 2, max_pages: int = 50) -> dict:
+async def crawl(target: str, max_depth: int = 2, max_pages: int = 50, headers: dict = None, cookies: dict = None) -> dict:
     """
     Crawl a website to discover URLs, forms, and input parameters.
     Returns a dict with:
@@ -18,7 +18,7 @@ async def crawl(target: str, max_depth: int = 2, max_pages: int = 50) -> dict:
     base_url = None
 
     # Find a working base URL
-    async with httpx.AsyncClient(timeout=10, follow_redirects=True, verify=False) as client:
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True, verify=False, headers=headers, cookies=cookies) as client:
         for url in base_urls:
             try:
                 resp = await client.get(url)
@@ -37,7 +37,7 @@ async def crawl(target: str, max_depth: int = 2, max_pages: int = 50) -> dict:
     all_forms = []
     all_params = []
 
-    async with httpx.AsyncClient(timeout=10, follow_redirects=True, verify=False) as client:
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True, verify=False, headers=headers, cookies=cookies) as client:
         while to_visit and len(visited) < max_pages:
             url, depth = to_visit.pop(0)
 

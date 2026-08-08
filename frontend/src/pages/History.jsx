@@ -85,6 +85,8 @@ export default function History() {
         blob = new Blob([JSON.stringify(response.data, null, 2)], { type: 'application/json' });
       } else if (format === 'pdf') {
         blob = new Blob([response.data], { type: 'application/pdf' });
+      } else if (format === 'csv') {
+        blob = new Blob([response.data], { type: 'text/csv' });
       } else {
         blob = new Blob([response.data], { type: 'text/html' });
       }
@@ -369,6 +371,15 @@ export default function History() {
                   >
                     <Download className="h-3.5 w-3.5 text-blue-400" />
                     HTML
+                  </Button>
+                  <Button
+                    variant="outline"
+                    size="sm"
+                    className="h-9 gap-1.5 text-xs font-semibold"
+                    onClick={() => handleDownloadReport(selectedScanReport.scan_id, 'csv', selectedScanReport.target)}
+                  >
+                    <Download className="h-3.5 w-3.5 text-emerald-400" />
+                    CSV
                   </Button>
                   <Button
                     variant="outline"

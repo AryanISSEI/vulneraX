@@ -2,6 +2,7 @@ import json
 import os
 import re
 from datetime import datetime
+import csv
 from jinja2 import Environment, FileSystemLoader
 from fpdf import FPDF
 from models import ScanResult
@@ -40,6 +41,29 @@ def generate_json_report(scan_result: ScanResult) -> str:
     with open(filepath, "w", encoding="utf-8") as f:
         json.dump(data, f, indent=2, default=str)
 
+    return filepath
+
+
+def generate_csv_report(scan_result: ScanResult) -> str:
+    """Generate a CSV report of vulnerabilities and return the file path."""
+    ensure_reports_dir()
+    filename = f"VulneraX_{_safe_filename(scan_result.target)}_{scan_result.scan_id[:8]}.csv"
+    filepath = os.path.join(REPORTS_DIR, filename)
+
+    with open(filepath, "w", newline="", encoding="utf-8") as f:
+        writer = csv.writer(f)
+        writer.writerow(["Name", "Category", "Severity", "URL", "Description", "Recommendation"])
+        for v in scan_result.vulnerabilities:
+            sev = v.severity.value if hasattr(v.severity, "value") else str(v.severity)
+            writer.writerow([
+                v.name,
+                v.category,
+                sev.upper(),
+                v.url,
+                v.description,
+                v.recommendation
+            ])
+            
     return filepath
 
 

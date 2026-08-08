@@ -12,11 +12,13 @@ from fastapi.responses import FileResponse, JSONResponse
 
 from models import (
     ScanRequest, ScanResponse, ScanResult, ScanSummary,
-    DNSResult, FingerprintResult, SSLResult, RiskScore
+    DNSResult, FingerprintResult, SSLResult, RiskScore, VulnerabilityResult
 )
 from database import save_scan, get_scan, get_all_scans, update_scan_status, update_scan_results, delete_scan
 from core.security import get_current_user
 from core.celery_app import celery
+import google.generativeai as genai
+from pydantic import BaseModel
 
 from scanner.dns_lookup import dns_lookup
 from scanner.port_scanner import scan_ports
@@ -32,7 +34,7 @@ from scanner.traversal import test_traversal
 from scanner.redirect import test_redirect
 from scanner.sensitive_files import check_sensitive_files
 from scanner.risk_score import calculate_risk_score
-from scanner.report import generate_json_report, generate_html_report, generate_pdf_report
+from scanner.report import generate_json_report, generate_html_report, generate_pdf_report, generate_csv_report
 
 router = APIRouter()
 
@@ -96,7 +98,7 @@ _ABORTED_SCANS = set()
 _RUNNING_TASKS: dict[str, asyncio.Task] = {}
 
 
-async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
+async def run_scan_logic(scan_id: str, target: str, user_id: int = None, custom_headers: dict = None, custom_cookies: dict = None):
     """Execute the full scan pipeline."""
     result = ScanResult(
         scan_id=scan_id,
@@ -165,7 +167,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         result.current_phase = "Fingerprinting"
         await update_scan_status(scan_id, "running", "Fingerprinting")
         try:
-            result.fingerprint = await fingerprint(target)
+            result.fingerprint = await fingerprint(target, headers=custom_headers, cookies=custom_cookies)
         except Exception:
             result.fingerprint = FingerprintResult()
         await save_partial_results(result)
@@ -175,7 +177,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         result.current_phase = "Checking Headers"
         await update_scan_status(scan_id, "running", "Checking Headers")
         try:
-            result.headers = await check_headers(target)
+            result.headers = await check_headers(target, headers=custom_headers, cookies=custom_cookies)
         except Exception:
             pass
         await save_partial_results(result)
@@ -185,7 +187,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         result.current_phase = "Analyzing Cookies"
         await update_scan_status(scan_id, "running", "Analyzing Cookies")
         try:
-            result.cookies = await analyze_cookies(target)
+            result.cookies = await analyze_cookies(target, headers=custom_headers, cookies=custom_cookies)
         except Exception:
             pass
         await save_partial_results(result)
@@ -208,7 +210,7 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         has_http = any(p.port in (80, 443, 8080, 8443, 8000, 3000) for p in result.ports) or True
         if has_http:
             try:
-                crawl_data = await crawl(target)
+                crawl_data = await crawl(target, headers=custom_headers, cookies=custom_cookies)
             except Exception:
                 pass
         await save_partial_results(result)
@@ -219,11 +221,11 @@ async def run_scan_logic(scan_id: str, target: str, user_id: int = None):
         await update_scan_status(scan_id, "running", "Testing Vulnerabilities")
 
         vuln_tasks = [
-            test_xss(target, crawl_data),
-            test_sqli(target, crawl_data),
-            test_traversal(target, crawl_data),
-            test_redirect(target, crawl_data),
-            check_sensitive_files(target),
+            test_xss(target, crawl_data, headers=custom_headers, cookies=custom_cookies),
+            test_sqli(target, crawl_data, headers=custom_headers, cookies=custom_cookies),
+            test_traversal(target, crawl_data, headers=custom_headers, cookies=custom_cookies),
+            test_redirect(target, crawl_data, headers=custom_headers, cookies=custom_cookies),
+            check_sensitive_files(target, headers=custom_headers, cookies=custom_cookies),
         ]
 
         vuln_results = await asyncio.gather(*vuln_tasks, return_exceptions=True)
@@ -283,7 +285,7 @@ async def start_scan(request: ScanRequest, req: Request, background_tasks: Backg
     await save_scan(scan_id, target, timestamp, "pending", user_id=user_id)
 
     # Start scan task and track reference
-    task = asyncio.create_task(run_scan_logic(scan_id, target, user_id))
+    task = asyncio.create_task(run_scan_logic(scan_id, target, user_id, request.headers, request.cookies))
     _RUNNING_TASKS[scan_id] = task
 
     return ScanResponse(
@@ -406,5 +408,48 @@ async def get_report(scan_id: str, format: str = "json", user_id: int = Depends(
     elif format == "pdf":
         filepath = generate_pdf_report(scan_result)
         return FileResponse(filepath, filename=_safe_report_basename(filepath), media_type="application/pdf")
+    elif format == "csv":
+        filepath = generate_csv_report(scan_result)
+        return FileResponse(filepath, filename=_safe_report_basename(filepath), media_type="text/csv")
     else:
-        raise HTTPException(status_code=400, detail="Invalid format. Use: json, html, pdf")
+        raise HTTPException(status_code=400, detail="Invalid format. Use: json, html, pdf, csv")
+
+
+class AIRemediationRequest(BaseModel):
+    vulnerability_title: str
+    vulnerability_description: str
+    evidence: str = ""
+
+@router.post("/scan/{scan_id}/remediation/ai")
+async def generate_ai_remediation(scan_id: str, request: AIRemediationRequest, user_id: int = Depends(get_current_user)):
+    """Generate AI-powered remediation advice for a specific vulnerability."""
+    scan = await get_scan(scan_id)
+    if not scan or scan.get("user_id") != user_id:
+        raise HTTPException(status_code=404, detail="Scan not found")
+        
+    api_key = os.getenv("GEMINI_API_KEY")
+    if not api_key:
+        raise HTTPException(status_code=500, detail="AI Remediation is not configured (Missing API Key).")
+        
+    try:
+        genai.configure(api_key=api_key)
+        model = genai.GenerativeModel('gemini-1.5-pro')
+        
+        prompt = f"""
+        You are a senior application security engineer. Analyze the following vulnerability and provide a detailed, actionable remediation plan.
+        
+        Vulnerability Title: {request.vulnerability_title}
+        Description: {request.vulnerability_description}
+        Evidence/Payload: {request.evidence}
+        
+        Provide your response in Markdown format, structured as follows:
+        1. **Root Cause Analysis**: Briefly explain why this vulnerability occurs.
+        2. **Remediation Steps**: Step-by-step instructions to fix the issue.
+        3. **Code Example (if applicable)**: Show how to fix it in code (assume a generic web framework if none is obvious).
+        4. **Verification**: How the user can verify the fix.
+        """
+        
+        response = model.generate_content(prompt)
+        return {"remediation": response.text}
+    except Exception as e:
+        raise HTTPException(status_code=500, detail=f"AI generation failed: {str(e)}")

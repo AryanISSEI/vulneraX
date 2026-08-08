@@ -43,7 +43,7 @@ WEAK_VALUES = {
 }
 
 
-async def check_headers(target: str) -> list[HeaderResult]:
+async def check_headers(target: str, headers: dict = None, cookies: dict = None) -> list[HeaderResult]:
     """Check security headers of the target."""
     domain = target.replace("https://", "").replace("http://", "").strip("/").split("/")[0]
     results = []
@@ -56,7 +56,7 @@ async def check_headers(target: str) -> list[HeaderResult]:
                 timeout=10,
                 follow_redirects=True,
                 verify=False
-            ) as client:
+            , headers=headers, cookies=cookies) as client:
                 resp = await client.get(url)
 
                 for header_name, info in SECURITY_HEADERS.items():

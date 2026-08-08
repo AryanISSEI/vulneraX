@@ -10,8 +10,9 @@ import VulnPanel from '../components/VulnPanel';
 import RiskChart from '../components/RiskChart';
 import RiskGauge from '../components/RiskGauge';
 import RemediationPanel from '../components/RemediationPanel';
+import AttackGraph from '../components/AttackGraph';
 import { startScan, getScanStatus, getScanResults, abortScan } from '../api/client';
-import { Activity, Network, Globe, Lock, ShieldAlert, ExternalLink, PlusCircle, XCircle } from 'lucide-react';
+import { Activity, Network, Globe, Lock, ShieldAlert, ExternalLink, PlusCircle, XCircle, Share2 } from 'lucide-react';
 import gsap from 'gsap';
 import { useGSAP } from '@gsap/react';
 
@@ -182,7 +183,7 @@ export default function Dashboard() {
     }, 1500);
   };
 
-  const handleScan = async (target) => {
+  const handleScan = async (target, headers = null, cookies = null) => {
     if (pollRef.current) {
       clearInterval(pollRef.current);
       pollRef.current = null;
@@ -197,7 +198,7 @@ export default function Dashboard() {
     setActiveTab('overview');
 
     try {
-      const { data } = await startScan(target);
+      const { data } = await startScan(target, headers, cookies);
       setScanId(data.scan_id);
       setScanStatus('running');
 
@@ -315,6 +316,7 @@ export default function Dashboard() {
                   { id: 'network', label: 'Network & Ports', icon: Network },
                   { id: 'web', label: 'Web Headers', icon: Globe },
                   { id: 'crypto', label: 'SSL/TLS', icon: Lock },
+                  { id: 'graph', label: 'Attack Graph', icon: Share2 },
                 ].map(({ id, label, icon: Icon }) => (
                   <button
                     key={id}
@@ -383,11 +385,17 @@ export default function Dashboard() {
                   </div>
                 </div>
               )}
+
+              {activeTab === 'graph' && (
+                <div className="flex-1 min-h-[500px] w-full border border-border rounded-xl overflow-hidden bg-black/40 gsap-stagger-item">
+                  <AttackGraph scanResult={scanResult} />
+                </div>
+              )}
             </div>
           )}
         </div>
         
-      <RemediationPanel vulnerability={selectedVuln} onClose={() => setSelectedVuln(null)} />
+      <RemediationPanel vulnerability={selectedVuln} onClose={() => setSelectedVuln(null)} scanId={scanId} />
     </>
   );
 }

@@ -29,12 +29,12 @@ def check_traversal_success(response_text: str) -> str | None:
     return None
 
 
-async def test_traversal(target: str, crawl_data: dict) -> list[VulnerabilityResult]:
+async def test_traversal(target: str, crawl_data: dict, headers: dict = None, cookies: dict = None) -> list[VulnerabilityResult]:
     """Test for directory traversal vulnerabilities."""
     domain = target.replace("https://", "").replace("http://", "").strip("/").split("/")[0]
     results = []
 
-    async with httpx.AsyncClient(timeout=10, follow_redirects=True, verify=False) as client:
+    async with httpx.AsyncClient(timeout=10, follow_redirects=True, verify=False, headers=headers, cookies=cookies) as client:
         # Test URL parameters
         for url in crawl_data.get("params", [])[:10]:
             parsed = urlparse(url)

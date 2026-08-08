@@ -2,7 +2,7 @@ import httpx
 from models import CookieResult
 
 
-async def analyze_cookies(target: str) -> list[CookieResult]:
+async def analyze_cookies(target: str, headers: dict = None, cookies: dict = None) -> list[CookieResult]:
     """Analyze cookies set by the target for security flags."""
     domain = target.replace("https://", "").replace("http://", "").strip("/").split("/")[0]
     results = []
@@ -15,7 +15,7 @@ async def analyze_cookies(target: str) -> list[CookieResult]:
                 timeout=10,
                 follow_redirects=True,
                 verify=False
-            ) as client:
+            , headers=headers, cookies=cookies) as client:
                 resp = await client.get(url)
 
                 # Parse Set-Cookie headers
