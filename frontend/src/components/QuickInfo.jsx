@@ -1,31 +1,33 @@
 import { Globe, Server, MapPin, Network, Shield, Cpu } from 'lucide-react';
 import { riskScoreColor } from '../utils/helpers';
 
-export default function QuickInfo({ scanResult }) {
+export default function QuickInfo({ scanResult, status: propStatus }) {
   if (!scanResult) return null;
 
-  const { dns, fingerprint, ports, risk_score, status } = scanResult;
-  const scoreInfo = riskScoreColor(risk_score?.overall ?? 0, status);
+  const { dns, fingerprint, ports, risk_score, status: resultStatus } = scanResult;
+  const currentStatus = propStatus || resultStatus;
+  const isRunning = currentStatus === 'running' || currentStatus === 'pending';
+  const scoreInfo = riskScoreColor(risk_score?.overall ?? 0, currentStatus);
 
   const cards = [
     {
       icon: Globe,
       label: 'IP Address',
-      value: dns?.ip_address || '—',
+      value: dns?.ip_address || (isRunning ? 'Resolving...' : '—'),
       color: 'text-primary',
       bg: 'bg-primary/10',
     },
     {
       icon: MapPin,
       label: 'Country',
-      value: dns?.country || '—',
+      value: dns?.country || (isRunning ? 'Checking...' : '—'),
       color: 'text-muted-foreground',
       bg: 'bg-foreground/5',
     },
     {
       icon: Server,
       label: 'Server',
-      value: fingerprint?.server || '—',
+      value: fingerprint?.server || (isRunning ? 'Fingerprinting...' : '—'),
       color: 'text-muted-foreground',
       bg: 'bg-foreground/5',
     },
@@ -34,21 +36,21 @@ export default function QuickInfo({ scanResult }) {
       label: 'Technologies',
       value: fingerprint?.technologies?.length
         ? fingerprint.technologies.slice(0, 3).join(', ')
-        : '—',
+        : (isRunning ? 'Analyzing...' : '—'),
       color: 'text-muted-foreground',
       bg: 'bg-foreground/5',
     },
     {
       icon: Network,
       label: 'Open Ports',
-      value: ports?.length?.toString() || '0',
+      value: isRunning && (!ports || ports.length === 0) ? 'Scanning...' : (ports?.length?.toString() || '0'),
       color: 'text-orange-500',
       bg: 'bg-orange-500/10',
     },
     {
       icon: Shield,
       label: 'Risk Score',
-      value: status === 'aborted' ? 'Aborted' : status === 'error' ? 'N/A' : `${risk_score?.overall ?? 100}/100`,
+      value: isRunning ? 'Scanning...' : currentStatus === 'aborted' ? 'Aborted' : currentStatus === 'error' ? 'N/A' : `${risk_score?.overall ?? 0}/100`,
       color: '',
       bg: '',
       customColor: scoreInfo.color,

@@ -9,6 +9,7 @@ export default function RiskGauge({ score, status }) {
   const animatedScore = useRef(0);
   const animFrameRef = useRef(null);
 
+  const isRunning = status === 'running' || status === 'pending';
   const info = riskScoreColor(score ?? 0, status);
 
   useEffect(() => {
@@ -32,7 +33,7 @@ export default function RiskGauge({ score, status }) {
     const startAngle = Math.PI;
     const endAngle = 2 * Math.PI;
 
-    const targetScore = status === 'aborted' ? 0 : (score ?? 100);
+    const targetScore = status === 'aborted' ? 0 : isRunning ? 50 : (score ?? 0);
 
     function draw(currentScore) {
       ctx.clearRect(0, 0, size, size);
@@ -56,7 +57,7 @@ export default function RiskGauge({ score, status }) {
 
       ctx.beginPath();
       ctx.arc(cx, cy, radius, startAngle, scoreAngle);
-      ctx.strokeStyle = status === 'aborted' ? '#f43f5e' : gradient;
+      ctx.strokeStyle = status === 'aborted' ? '#f43f5e' : isRunning ? '#f59e0b' : gradient;
       ctx.lineWidth = lineWidth;
       ctx.lineCap = 'round';
       ctx.stroke();
@@ -72,10 +73,15 @@ export default function RiskGauge({ score, status }) {
       // Score text
       ctx.fillStyle = info.color;
       if (status === 'aborted') {
-        ctx.font = 'bold 22px Inter, sans-serif';
+        ctx.font = 'bold 20px Inter, sans-serif';
         ctx.textAlign = 'center';
         ctx.textBaseline = 'middle';
         ctx.fillText('ABORTED', cx, cy - 8);
+      } else if (isRunning) {
+        ctx.font = 'bold 16px Inter, sans-serif';
+        ctx.textAlign = 'center';
+        ctx.textBaseline = 'middle';
+        ctx.fillText('SCANNING...', cx, cy - 8);
       } else {
         ctx.font = 'bold 36px Inter, sans-serif';
         ctx.textAlign = 'center';
@@ -113,7 +119,7 @@ export default function RiskGauge({ score, status }) {
     return () => {
       if (animFrameRef.current) cancelAnimationFrame(animFrameRef.current);
     };
-  }, [score, status, info.color]);
+  }, [score, status, isRunning, info.color]);
 
   return (
     <GlassCard className="flex flex-col items-center flex-1 w-full h-full p-6">

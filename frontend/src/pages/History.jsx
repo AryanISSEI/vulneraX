@@ -46,11 +46,14 @@ export default function History() {
 
   const handleViewDashboard = async (scan) => {
     try {
-      const { data: results } = await getScanResults(scan.scan_id);
+      const { data: statusData } = await getScanStatus(scan.scan_id).catch(() => ({ data: {} }));
+      const { data: results } = await getScanResults(scan.scan_id).catch(() => ({ data: null }));
+      const activeStatus = statusData.status || results?.status || scan.status;
       localStorage.setItem('vulnerax_active_scan', JSON.stringify({
         target: scan.target,
         scanId: scan.scan_id,
-        scanStatus: scan.status,
+        scanStatus: activeStatus,
+        currentPhase: statusData.current_phase || 'In Progress',
         scanResult: results
       }));
     } catch (err) {
@@ -126,10 +129,42 @@ export default function History() {
     show: { opacity: 1, y: 0, transition: { type: "spring", stiffness: 300, damping: 24 } }
   };
 
+  // Polling for selected scan report if opened while scan is running
+  useEffect(() => {
+    let interval = null;
+    if (selectedScanReport && (selectedScanReport.status === 'running' || selectedScanReport.status === 'pending' || selectedScanReport.results?.status === 'running' || selectedScanReport.results?.status === 'pending')) {
+      interval = setInterval(async () => {
+        try {
+          const { data: results } = await getScanResults(selectedScanReport.scan_id);
+          if (results) {
+            setSelectedScanReport(prev => prev ? ({
+              ...prev,
+              status: results.status || prev.status,
+              risk_score: results.risk_score ?? prev.risk_score,
+              results
+            }) : null);
+            if (results.status === 'completed' || results.status === 'aborted' || results.status === 'error') {
+              fetchHistory();
+            }
+          }
+        } catch (e) {}
+      }, 2000);
+    }
+    return () => {
+      if (interval) clearInterval(interval);
+    };
+  }, [selectedScanReport?.scan_id, selectedScanReport?.status, selectedScanReport?.results?.status]);
+
   // Helper to build AI Exploit Chain & Reasoning
   const buildAIReasoning = (results, status) => {
     if (status === 'aborted' || results?.status === 'aborted') {
       return "This security scan was aborted by the user before completion. Complete vulnerability detection and AI exploit reasoning could not be conducted for this target.";
+    }
+    if (status === 'running' || status === 'pending' || results?.status === 'running' || results?.status === 'pending') {
+      return "Security scan is currently in progress. AI threat intelligence, vulnerability detection, and exploit reasoning are actively running and will be dynamically finalized once the assessment completes.";
+    }
+    if (status === 'error' || results?.status === 'error') {
+      return "Security scan encountered an error during execution. Vulnerability detection could not be completed for this target.";
     }
     if (!results) return "Scan results pending or uninitialized.";
     const vulns = results.vulnerabilities || [];
@@ -238,6 +273,7 @@ export default function History() {
               </TableHeader>
               <TableBody as={motion.tbody} variants={container} initial="hidden" animate="show">
                 {filtered.map((scan) => {
+                  const isRunning = scan.status === 'running' || scan.status === 'pending';
                   const scoreInfo = riskScoreColor(scan.risk_score, scan.status);
                   return (
                     <TableRow key={scan.scan_id} as={motion.tr} variants={item} className="hover:bg-secondary/40 transition-colors">
@@ -258,7 +294,7 @@ export default function History() {
                               ? 'bg-rose-500/10 text-rose-400 border-rose-500/30'
                               : scan.status === 'error'
                               ? 'bg-destructive/10 text-destructive border-none'
-                              : 'bg-amber-500/10 text-amber-400'
+                              : 'bg-amber-500/10 text-amber-400 border-amber-500/30 animate-pulse'
                           }
                         >
                           <span className={`mr-1.5 h-1.5 w-1.5 rounded-full ${
@@ -275,10 +311,12 @@ export default function History() {
                       </TableCell>
                       <TableCell>
                         <div className="flex items-center gap-2">
-                          <span className="text-sm font-bold" style={{ color: scoreInfo.color }}>
-                            {scan.status === 'aborted' ? 'Aborted' : scan.status === 'error' ? 'N/A' : `${scan.risk_score}/100`}
+                          <span className="text-sm font-bold" style={{ color: isRunning ? '#f59e0b' : scoreInfo.color }}>
+                            {isRunning ? 'Scanning...' : scan.status === 'aborted' ? 'Aborted' : scan.status === 'error' ? 'N/A' : `${scan.risk_score}/100`}
                           </span>
-                          <span className="text-[10px] text-muted-foreground">({scoreInfo.label})</span>
+                          <span className="text-[10px] text-muted-foreground">
+                            ({isRunning ? 'In Progress' : scoreInfo.label})
+                          </span>
                         </div>
                       </TableCell>
                       <TableCell className="text-right">
@@ -329,7 +367,9 @@ export default function History() {
 
       {/* AI Threat Analysis & Report Modal */}
       <AnimatePresence>
-        {selectedScanReport && (
+        {selectedScanReport && (() => {
+          const isModalScanRunning = selectedScanReport.status === 'running' || selectedScanReport.status === 'pending' || selectedScanReport.results?.status === 'running' || selectedScanReport.results?.status === 'pending';
+          return (
           <div className="fixed inset-0 z-50 flex items-center justify-center p-4 bg-black/80 backdrop-blur-md">
             <motion.div
               initial={{ opacity: 0, scale: 0.95 }}
@@ -358,6 +398,8 @@ export default function History() {
                     variant="outline"
                     size="sm"
                     className="h-9 gap-1.5 text-xs font-semibold"
+                    disabled={isModalScanRunning}
+                    title={isModalScanRunning ? "Scan in progress... PDF export available after completion" : "Download PDF report"}
                     onClick={() => handleDownloadReport(selectedScanReport.scan_id, 'pdf', selectedScanReport.target)}
                   >
                     <Download className="h-3.5 w-3.5 text-red-400" />
@@ -367,6 +409,8 @@ export default function History() {
                     variant="outline"
                     size="sm"
                     className="h-9 gap-1.5 text-xs font-semibold"
+                    disabled={isModalScanRunning}
+                    title={isModalScanRunning ? "Scan in progress... HTML export available after completion" : "Download HTML report"}
                     onClick={() => handleDownloadReport(selectedScanReport.scan_id, 'html', selectedScanReport.target)}
                   >
                     <Download className="h-3.5 w-3.5 text-blue-400" />
@@ -376,6 +420,8 @@ export default function History() {
                     variant="outline"
                     size="sm"
                     className="h-9 gap-1.5 text-xs font-semibold"
+                    disabled={isModalScanRunning}
+                    title={isModalScanRunning ? "Scan in progress... CSV export available after completion" : "Download CSV report"}
                     onClick={() => handleDownloadReport(selectedScanReport.scan_id, 'csv', selectedScanReport.target)}
                   >
                     <Download className="h-3.5 w-3.5 text-emerald-400" />
@@ -385,6 +431,8 @@ export default function History() {
                     variant="outline"
                     size="sm"
                     className="h-9 gap-1.5 text-xs font-semibold"
+                    disabled={isModalScanRunning}
+                    title={isModalScanRunning ? "Scan in progress... JSON export available after completion" : "Download JSON report"}
                     onClick={() => handleDownloadReport(selectedScanReport.scan_id, 'json', selectedScanReport.target)}
                   >
                     <Download className="h-3.5 w-3.5 text-amber-400" />
@@ -412,7 +460,13 @@ export default function History() {
                       AI Threat Chain & Exploit Reasoning
                     </span>
                     <Badge variant="outline" className="font-bold text-xs">
-                      Risk Score: {selectedScanReport.status === 'aborted' ? 'Aborted' : selectedScanReport.status === 'error' ? 'N/A' : `${selectedScanReport.risk_score}/100`}
+                      {isModalScanRunning
+                        ? 'Status: Scan in Progress'
+                        : selectedScanReport.status === 'aborted' || selectedScanReport.results?.status === 'aborted'
+                        ? 'Status: Aborted'
+                        : selectedScanReport.status === 'error' || selectedScanReport.results?.status === 'error'
+                        ? 'Status: Scan Error'
+                        : `Risk Score: ${selectedScanReport.risk_score ?? selectedScanReport.results?.risk_score ?? 0}/100`}
                     </Badge>
                   </div>
                   <p className="text-sm leading-relaxed text-foreground">
@@ -427,10 +481,18 @@ export default function History() {
                     Detected Findings & Concrete Patch Suggestions
                   </h3>
 
-                  {selectedScanReport.status === 'aborted' ? (
-                    <div className="p-6 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center text-sm text-rose-300">
-                      <AlertTriangle className="h-8 w-8 text-rose-400 mx-auto mb-2" />
+                  {selectedScanReport.status === 'aborted' || selectedScanReport.results?.status === 'aborted' ? (
+                    <div className="p-6 rounded-xl bg-rose-500/10 border border-rose-500/20 text-center text-sm text-rose-500 dark:text-rose-300">
+                      <AlertTriangle className="h-8 w-8 text-rose-500 mx-auto mb-2" />
                       This scan was aborted by the user before vulnerability testing could be completed.
+                    </div>
+                  ) : isModalScanRunning ? (
+                    <div className="p-6 rounded-xl bg-amber-500/10 border border-amber-500/20 text-center text-sm text-amber-600 dark:text-amber-300 flex flex-col items-center justify-center py-10">
+                      <Loader2 className="h-8 w-8 text-amber-500 mx-auto mb-2 animate-spin" />
+                      <p className="font-bold text-base text-foreground">Security Scan in Progress</p>
+                      <p className="text-xs text-muted-foreground mt-1 max-w-md text-center">
+                        Automated vulnerability scanning modules are actively auditing this target. Detailed findings and AI remediation code patches will be generated as soon as testing finishes.
+                      </p>
                     </div>
                   ) : (!selectedScanReport.results?.vulnerabilities || selectedScanReport.results.vulnerabilities.length === 0) ? (
                     <div className="p-6 rounded-xl bg-card border border-border text-center text-sm text-muted-foreground">
@@ -505,7 +567,8 @@ export default function History() {
               </div>
             </motion.div>
           </div>
-        )}
+        );
+        })()}
       </AnimatePresence>
     </div>
   );

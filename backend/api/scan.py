@@ -17,7 +17,10 @@ from models import (
 from database import save_scan, get_scan, get_all_scans, update_scan_status, update_scan_results, delete_scan
 from core.security import get_current_user
 from core.celery_app import celery
-import google.generativeai as genai
+try:
+    import google.generativeai as genai
+except ImportError:
+    genai = None
 from pydantic import BaseModel
 
 from scanner.dns_lookup import dns_lookup

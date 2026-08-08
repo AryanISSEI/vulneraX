@@ -25,6 +25,9 @@ export const headerStatusColor = (present, isWeak) => {
  * Risk score to color gradient
  */
 export const riskScoreColor = (score, status) => {
+  if (status === 'running' || status === 'pending') {
+    return { color: '#f59e0b', label: 'Scan in Progress' };
+  }
   if (status === 'aborted') {
     return { color: '#f43f5e', label: 'Aborted' };
   }

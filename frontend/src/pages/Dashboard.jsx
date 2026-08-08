@@ -85,20 +85,47 @@ export default function Dashboard() {
     const queryScanId = params.get('scan');
 
     if (queryScanId) {
-      getScanResults(queryScanId)
+      getScanStatus(queryScanId)
+        .then(({ data: statusData }) => {
+          const status = statusData.status || 'completed';
+          setScanId(queryScanId);
+          setScanStatus(status);
+          if (statusData.target) setTargetDomain(statusData.target);
+          if (statusData.current_phase) setCurrentPhase(statusData.current_phase);
+
+          if (status === 'running' || status === 'pending') {
+            setIsScanning(true);
+            startPolling(queryScanId, statusData.target || '');
+          }
+
+          return getScanResults(queryScanId);
+        })
         .then(({ data }) => {
           if (data && data.target) {
             setScanResult(data);
             setScanId(queryScanId);
-            setScanStatus(data.status || 'completed');
             setTargetDomain(data.target);
-            if (data.status === 'aborted') {
+            const status = data.status || 'completed';
+            setScanStatus(status);
+
+            if (status === 'running' || status === 'pending') {
+              setIsScanning(true);
+              setCurrentPhase(data.current_phase || 'Scan in progress...');
+              startPolling(queryScanId, data.target);
+            } else if (status === 'aborted') {
+              setIsScanning(false);
               setError('Scan aborted by user.');
+            } else if (status === 'error') {
+              setIsScanning(false);
+              setError('Scan encountered an error.');
+            } else {
+              setIsScanning(false);
             }
+
             localStorage.setItem('vulnerax_active_scan', JSON.stringify({
               target: data.target,
               scanId: queryScanId,
-              scanStatus: data.status || 'completed',
+              scanStatus: status,
               scanResult: data
             }));
           }
@@ -109,11 +136,14 @@ export default function Dashboard() {
       if (saved) {
         try {
           const data = JSON.parse(saved);
+          if (data.target) setTargetDomain(data.target);
+          if (data.scanId) setScanId(data.scanId);
+          if (data.scanStatus) setScanStatus(data.scanStatus);
+          if (data.scanResult) {
+            setScanResult(data.scanResult);
+          }
           if (data.scanId && (data.scanStatus === 'running' || data.scanStatus === 'pending')) {
-            if (data.target) setTargetDomain(data.target);
-            setScanId(data.scanId);
             setIsScanning(true);
-            setScanStatus(data.scanStatus);
             setCurrentPhase(data.currentPhase || 'Resuming scan...');
             startPolling(data.scanId, data.target);
           }
@@ -341,10 +371,10 @@ export default function Dashboard() {
               {activeTab === 'overview' && (
                 <div className="grid grid-cols-1 md:grid-cols-3 xl:grid-cols-4 gap-6 flex-1 min-h-0 grid-rows-[auto_1fr]">
                   <div className="md:col-span-3 xl:col-span-4 gsap-stagger-item perspective-[1000px]">
-                    <QuickInfo scanResult={scanResult} />
+                    <QuickInfo scanResult={scanResult} status={isScanning ? 'running' : (scanResult?.status || scanStatus)} />
                   </div>
                   <div className="md:col-span-1 xl:col-span-1 flex flex-col min-h-0 gsap-stagger-item perspective-[1000px]">
-                    <RiskGauge score={scanResult?.risk_score?.overall} status={scanResult?.status || scanStatus} />
+                    <RiskGauge score={scanResult?.risk_score?.overall} status={isScanning ? 'running' : (scanResult?.status || scanStatus)} />
                   </div>
                   <div className="md:col-span-2 xl:col-span-3 flex flex-col min-h-0 gsap-stagger-item perspective-[1000px]">
                     <RiskChart vulnerabilities={scanResult?.vulnerabilities || []} />
