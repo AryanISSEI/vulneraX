@@ -221,6 +221,13 @@ _SEVERITY_COLORS = {
     "info": _CLR_GRAY,
 }
 
+def _s(txt) -> str:
+    """Sanitize string for FPDF latin-1 encoding, avoiding crashes on Unicode/None."""
+    if txt is None:
+        return ""
+    return str(txt).encode("latin-1", "replace").decode("latin-1")
+
+
 
 class VulneraXPDF(FPDF):
     """Custom PDF with dark-themed coloured pages."""
@@ -242,7 +249,7 @@ class VulneraXPDF(FPDF):
         self.ln(4)
         self.set_font("Helvetica", "B", 15)
         self.set_text_color(*_CLR_CYAN_LIGHT)
-        self.cell(0, 10, title, ln=True)
+        self.cell(0, 10, _s(title), ln=True)
         # Accent line
         y = self.get_y()
         self.set_draw_color(*_CLR_CYAN)
@@ -257,7 +264,7 @@ class VulneraXPDF(FPDF):
         self.set_text_color(*_CLR_CYAN_LIGHT)
         self.set_draw_color(*_CLR_BG_SECTION)
         for label, w in cols:
-            self.cell(w, 8, label, border=1, fill=True)
+            self.cell(w, 8, _s(label), border=1, fill=True)
         self.ln()
 
     def _table_row(self, values: list[tuple[str, int]], alt: bool = False):
@@ -270,17 +277,17 @@ class VulneraXPDF(FPDF):
             self.set_fill_color(*_CLR_BG_DARK)
         self.set_draw_color(*_CLR_BG_SECTION)
         for text, w in values:
-            self.cell(w, 7, text, border=1, fill=True)
+            self.cell(w, 7, _s(text), border=1, fill=True)
         self.ln()
 
     def _kv_row(self, label: str, value: str, lw: int = 50):
         """Simple label → value row in body text."""
         self.set_font("Helvetica", "B", 10)
         self.set_text_color(*_CLR_CYAN_LIGHT)
-        self.cell(lw, 7, label)
+        self.cell(lw, 7, _s(label))
         self.set_font("Helvetica", "", 10)
         self.set_text_color(*_CLR_TEXT)
-        self.cell(0, 7, value[:80], ln=True)
+        self.cell(0, 7, _s(value)[:80], ln=True)
 
 
 def generate_pdf_report(scan_result: ScanResult) -> str:
@@ -307,8 +314,8 @@ def generate_pdf_report(scan_result: ScanResult) -> str:
 
     pdf.set_font("Helvetica", "", 10)
     pdf.set_text_color(*_CLR_TEXT_MUTED)
-    pdf.cell(0, 7, f"Target: {s.target}  |  Scan ID: {s.scan_id}", ln=True, align="C")
-    pdf.cell(0, 7, f"Date: {s.timestamp}", ln=True, align="C")
+    pdf.cell(0, 7, _s(f"Target: {s.target}  |  Scan ID: {s.scan_id}"), ln=True, align="C")
+    pdf.cell(0, 7, _s(f"Date: {s.timestamp}"), ln=True, align="C")
     pdf.ln(10)
 
     # ── Risk Score ───────────────────────────────────────────────
@@ -353,7 +360,7 @@ def generate_pdf_report(scan_result: ScanResult) -> str:
             pdf.set_fill_color(*color)
             pdf.set_text_color(*_CLR_WHITE)
             pdf.set_font("Helvetica", "B", 9)
-            pdf.cell(tw, 7, text, fill=True, align="C")
+            pdf.cell(tw, 7, _s(text), fill=True, align="C")
             # Round corners not natively supported; the fill gives a clean look
             x_start += tw + 4
         pdf.ln(16)
@@ -428,16 +435,16 @@ def generate_pdf_report(scan_result: ScanResult) -> str:
 
             # Header name
             pdf.set_text_color(*_CLR_TEXT)
-            pdf.cell(55, 7, h.name, border=1, fill=True)
+            pdf.cell(55, 7, _s(h.name), border=1, fill=True)
             # Status – coloured
             if h.present:
                 pdf.set_text_color(*_CLR_GREEN)
             else:
                 pdf.set_text_color(*_CLR_RED)
-            pdf.cell(25, 7, status_text, border=1, fill=True)
+            pdf.cell(25, 7, _s(status_text), border=1, fill=True)
             # Value
             pdf.set_text_color(*_CLR_TEXT)
-            pdf.cell(val_w, 7, (h.value or "-")[:40], border=1, fill=True)
+            pdf.cell(val_w, 7, _s(h.value)[:40] if h.value else "-", border=1, fill=True)
             pdf.ln()
         pdf.ln(4)
 
@@ -459,7 +466,7 @@ def generate_pdf_report(scan_result: ScanResult) -> str:
             pdf.set_font("Helvetica", "", 9)
 
             pdf.set_text_color(*_CLR_TEXT)
-            pdf.cell(40, 7, c.name[:18], border=1, fill=True)
+            pdf.cell(40, 7, _s(c.name)[:18], border=1, fill=True)
 
             # HttpOnly – green/red
             pdf.set_text_color(*(_CLR_GREEN if c.http_only else _CLR_RED))
@@ -470,7 +477,7 @@ def generate_pdf_report(scan_result: ScanResult) -> str:
             pdf.cell(20, 7, "Yes" if c.secure else "No", border=1, fill=True)
 
             pdf.set_text_color(*_CLR_TEXT)
-            pdf.cell(25, 7, c.same_site or "None", border=1, fill=True)
+            pdf.cell(25, 7, _s(c.same_site or "None"), border=1, fill=True)
 
             issue_count = len(c.issues)
             pdf.set_text_color(*(_CLR_RED if issue_count else _CLR_GREEN))
@@ -508,7 +515,7 @@ def generate_pdf_report(scan_result: ScanResult) -> str:
             for issue in s.ssl.issues:
                 pdf.set_text_color(*_CLR_ORANGE)
                 pdf.cell(8, 7, "")
-                pdf.cell(0, 7, f"- {issue}", ln=True)
+                pdf.cell(0, 7, _s(f"- {issue}"), ln=True)
         pdf.ln(4)
 
     # ── Vulnerabilities ──────────────────────────────────────────
@@ -546,7 +553,7 @@ def generate_pdf_report(scan_result: ScanResult) -> str:
             badge_text = f" {sev.upper()} "
             badge_w = pdf.get_string_width(badge_text) + 6
 
-            pdf.cell(name_w, 7, v.name)
+            pdf.cell(name_w, 7, _s(v.name))
             pdf.set_fill_color(*sev_clr)
             pdf.set_text_color(*_CLR_WHITE)
             pdf.set_font("Helvetica", "B", 8)
@@ -557,13 +564,13 @@ def generate_pdf_report(scan_result: ScanResult) -> str:
             pdf.set_x(card_x + 7)
             pdf.set_font("Helvetica", "", 9)
             pdf.set_text_color(*_CLR_TEXT_MUTED)
-            pdf.cell(0, 5, f"Category: {v.category}", ln=True)
+            pdf.cell(0, 5, _s(f"Category: {v.category}"), ln=True)
 
             # URL if present
             if v.url:
                 pdf.set_x(card_x + 7)
                 pdf.set_text_color(*_CLR_CYAN_LIGHT)
-                pdf.cell(0, 5, f"URL: {v.url[:75]}", ln=True)
+                pdf.cell(0, 5, _s(f"URL: {v.url}")[:75], ln=True)
 
             # Description (may wrap)
             if v.description:
@@ -571,14 +578,14 @@ def generate_pdf_report(scan_result: ScanResult) -> str:
                 pdf.set_text_color(*_CLR_TEXT_MUTED)
                 pdf.set_font("Helvetica", "", 8)
                 # Use multi_cell for wrapping within the card area
-                pdf.multi_cell(card_w - 14, 5, v.description[:200])
+                pdf.multi_cell(card_w - 14, 5, _s(v.description)[:200])
 
             # Recommendation
             if v.recommendation:
                 pdf.set_x(card_x + 7)
                 pdf.set_text_color(*_CLR_CYAN_LIGHT)
                 pdf.set_font("Helvetica", "I", 8)
-                pdf.multi_cell(card_w - 14, 5, f"Recommendation: {v.recommendation[:200]}")
+                pdf.multi_cell(card_w - 14, 5, _s(f"Recommendation: {v.recommendation}")[:200])
 
             pdf.ln(4)
 
