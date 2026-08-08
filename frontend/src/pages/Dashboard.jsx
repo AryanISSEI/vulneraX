@@ -109,12 +109,9 @@ export default function Dashboard() {
       if (saved) {
         try {
           const data = JSON.parse(saved);
-          if (data.target) setTargetDomain(data.target);
-          if (data.scanId) setScanId(data.scanId);
-          if (data.scanStatus) setScanStatus(data.scanStatus);
-          if (data.scanResult) {
-            setScanResult(data.scanResult);
-          } else if (data.scanId && (data.scanStatus === 'running' || data.scanStatus === 'pending')) {
+          if (data.scanId && (data.scanStatus === 'running' || data.scanStatus === 'pending')) {
+            if (data.target) setTargetDomain(data.target);
+            setScanId(data.scanId);
             setIsScanning(true);
             setScanStatus(data.scanStatus);
             setCurrentPhase(data.currentPhase || 'Resuming scan...');
